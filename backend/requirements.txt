@@ -1,15 +1,29 @@
+# ===== Web framework =====
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
-sqlalchemy==2.0.23
-alembic==1.12.1
+python-multipart==0.0.6
+
+# ===== 数据校验 =====
 pydantic==2.5.0
 pydantic-settings==2.1.0
-python-multipart==0.0.6
+
+# ===== ORM / 迁移 =====
+sqlalchemy==2.0.23
+alembic==1.12.1
+
+# ===== 环境变量加载 =====
 python-dotenv==1.0.0
 
-# 市场数据相关
-akshare>=1.12.0
-tushare>=1.4.0
-redis>=5.0.0
-aiohttp>=3.9.0
-pandas>=2.0.0
+# ===== 数据源（caret 风格约束大版本，避免字段突变） =====
+akshare>=1.12.0,<2.0.0
+tushare>=1.4.0,<2.0.0
+
+# ===== 数据处理（pandas 2.x 兼容 numpy <3.0；numpy 2.0 是 breaking change） =====
+pandas>=2.0.0,<3.0.0
+numpy>=1.26.0,<3.0.0
+
+# ===== 可选缓存（未配置 REDIS_URL 时使用内存缓存） =====
+redis>=5.0.0,<6.0.0
+
+# ===== 已废弃：aiohttp 0 引用，保留占位以防未来需求 =====
+# aiohttp>=3.9.0  # 已删除（无任何 import）
