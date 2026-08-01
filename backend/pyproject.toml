@@ -12,3 +12,17 @@ pythonVersion = "3.10"
 include = ["app", "scripts", "tests"]
 exclude = ["alembic/versions", "__pycache__", ".venv"]
 reportMissingImports = "error"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-v --tb=short --strict-markers"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+# 自定义 marker 方便按域选择性跑测试
+markers = [
+    "slow: 跑得慢的测试（如真实网络请求）",
+    "integration: 集成测试（依赖多个模块）",
+]

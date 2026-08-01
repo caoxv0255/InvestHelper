@@ -152,13 +152,27 @@ npm run dev
 
 ## 运行测试
 
+所有测试使用 pytest，统一通过 `conftest.py` 提供 in-memory SQLite + FastAPI TestClient fixture：
+
 ```bash
 cd backend
-python -m tests.test_core      # 6 个核心业务逻辑用例（MemoryCache LRU / 周期收益差分 / 情绪 history_note）
-python -m tests.test_crud      # 各模型 CRUD
-python test_api.py             # API 集成
-python test_dashboard.py       # 仪表盘 API
-python -m tests.test_risk      # 风险分析 API
+pip install pytest httpx          # 一次性：装测试 deps
+pytest                            # 跑全部
+pytest tests/test_api.py          # 只跑 API 集成
+pytest -m "not slow"              # 跳过标记为 slow 的测试
+pytest -k "holdings"              # 按名字过滤
+```
+
+测试结构：
+
+```
+backend/tests/
+├── conftest.py            # 共享 fixtures：engine / db_session / client / 禁后台任务
+├── test_core.py           # 核心业务逻辑（MemoryCache / 周期收益差分 / sentiment）
+├── test_crud.py           # 各模型 CRUD
+├── test_api.py            # API 集成（health + holdings + deposits CRUD）
+├── test_dashboard.py      # 仪表盘 API
+└── test_risk.py           # 风险分析 API
 ```
 
 ## 策略实验室说明
