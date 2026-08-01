@@ -1,0 +1,51 @@
+# ===== 后端 =====
+backend/data/
+backend/.ruff_cache/
+backend/dist/
+**/__pycache__/
+*.pyc
+*.pyo
+*.db
+*.sqlite
+*.sqlite3
+*.egg-info/
+
+# ===== 前端 =====
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ===== 环境与密钥 =====
+# 提交任何 .env.* 文件前请三思：这里把所有 env 文件 ignore，仅保留 .env.example
+.env
+.env.*
+!.env.example
+!.env.development.example
+!.env.production.example
+
+# ===== IDE 与工具 =====
+.vscode/
+.idea/
+*.swp
+.DS_Store
+.reasonix/
+.trae/
+reasonix.toml
+*.code-workspace
+
+# ===== 编辑器缓存 =====
+.venv/
+venv/
+
+# ===== 日志 =====
+*.log
+logs/
+
+# ===== 测试与覆盖率 =====
+.pytest_cache/
+.coverage
+htmlcov/
+.cache/
+
+# ===== 嵌套项目残留（早期 Vite 脚手架痕迹，已清理） =====
+/InvestHelper/InvestHelper/

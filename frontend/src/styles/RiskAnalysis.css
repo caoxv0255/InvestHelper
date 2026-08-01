@@ -1,0 +1,332 @@
+.risk-analysis-page {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 1.5rem;
+}
+
+/* 加载和错误状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #999;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f0f0f0;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-message {
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  color: #ff4d4f;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0 0.5rem;
+  transition: color 0.2s ease;
+  color: #667eea;
+  text-decoration: underline;
+}
+
+/* 风险等级大卡片 */
+.risk-level-card {
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  color: white;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.risk-level-card:hover {
+  transform: translateY(-2px);
+}
+
+.risk-level-card.very_high {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+}
+
+.risk-level-card.high {
+  background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+}
+
+.risk-level-card.medium {
+  background: linear-gradient(135deg, #eab308 0%, #a16207 100%);
+}
+
+.risk-level-card.low {
+  background: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
+}
+
+.risk-level-label {
+  font-size: 1rem;
+  font-weight: 500;
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+}
+
+.risk-level-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.risk-level-desc {
+  font-size: 0.95rem;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+/* 指标卡片网格 */
+.metric-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.metric-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.metric-label {
+  font-size: 0.9rem;
+  color: #888;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+.metric-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 0.5rem;
+}
+
+.metric-sub {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.metric-value.warning {
+  color: #ef4444;
+}
+
+/* 警告卡片 */
+.warning-card {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.warning-icon {
+  font-size: 1.5rem;
+  color: #f97316;
+}
+
+.warning-content {
+  flex: 1;
+}
+
+.warning-title {
+  font-weight: 600;
+  color: #9a3412;
+  margin-bottom: 0.25rem;
+}
+
+.warning-desc {
+  font-size: 0.9rem;
+  color: #c2410c;
+}
+
+/* 图表行 */
+.chart-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.chart-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.chart-card.full-width {
+  grid-column: span 2;
+}
+
+.chart-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 1rem;
+}
+
+.chart-container {
+  width: 100%;
+}
+
+.empty-chart {
+  height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+  font-size: 0.9rem;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* 风险因子明细 */
+.risk-factors {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.risk-factor {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+}
+
+.risk-factor-name {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.risk-factor-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* 响应式适配 */
+@media (max-width: 1024px) {
+  .metric-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chart-row {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-card.full-width {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .risk-analysis-page {
+    padding: 1rem;
+  }
+
+  .risk-level-value {
+    font-size: 2rem;
+  }
+
+  .metric-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .risk-factors {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 数据表格 */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.75rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.data-table th {
+  color: #888;
+  font-weight: 500;
+  background: #fafafa;
+}
+
+.data-table td {
+  color: #1a1a2e;
+}
+
+.positive-value {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.negative-value {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.warning-value {
+  color: #f97316;
+  font-weight: 600;
+}
+
+/* 警告列表 */
+.warning-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.9rem;
+  color: #c2410c;
+}
+
+.warning-list li {
+  margin-bottom: 0.25rem;
+}

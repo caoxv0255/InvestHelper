@@ -1,0 +1,5 @@
+.report-date { margin: 1rem 0; color: #64748b; }
+.report-card { margin-top: 1rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.25rem; }
+.report-card h2 { margin-top: 0; font-size: 1.1rem; }
+.report-card li { margin: .5rem 0; color: #b45309; }
+.report-list > div { display: flex; justify-content: space-between; padding: .7rem 0; border-bottom: 1px solid #f1f5f9; }

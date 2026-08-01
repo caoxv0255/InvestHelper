@@ -1,0 +1,353 @@
+.dashboard-page {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 1.5rem;
+}
+
+/* 加载和错误状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #999;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f0f0f0;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-message {
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  color: #ff4d4f;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0 0.5rem;
+  transition: color 0.2s ease;
+  color: #667eea;
+  text-decoration: underline;
+}
+
+/* 顶部概览卡片 */
+.overview-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.overview-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.overview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.overview-card.card-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.overview-card.card-primary .card-label,
+.overview-card.card-primary .card-sub,
+.overview-card.card-primary .text-muted {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.card-label {
+  font-size: 0.9rem;
+  color: #888;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+.card-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+
+.card-value.large {
+  font-size: 2rem;
+}
+
+.card-sub {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.text-muted {
+  color: #aaa;
+}
+
+.card-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 0.25rem;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 32px;
+  background: #eee;
+}
+
+/* 收益周期卡片 */
+.profit-period-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.period-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.period-label {
+  font-size: 0.9rem;
+  color: #888;
+  font-weight: 500;
+}
+
+.period-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* 图表行 */
+.chart-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.chart-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.chart-card.chart-large {
+  grid-column: span 1;
+}
+
+.chart-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 1rem;
+}
+
+.chart-container {
+  width: 100%;
+}
+
+.empty-chart {
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+/* 快捷操作卡片 */
+.quick-actions-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0.5rem;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.action-btn:hover {
+  background: #f0f4ff;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.action-icon {
+  font-size: 1.5rem;
+}
+
+/* 平台明细列表 */
+.platform-list {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 1rem;
+}
+
+.platform-list-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 0.75rem;
+}
+
+.platform-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f8f8f8;
+}
+
+.platform-row:last-child {
+  border-bottom: none;
+}
+
+.platform-name {
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.platform-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.platform-value {
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.platform-profit {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* 响应式适配 */
+@media (max-width: 1024px) {
+  .overview-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chart-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-page {
+    padding: 1rem;
+  }
+
+  .overview-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .profit-period-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .card-value {
+    font-size: 1.5rem;
+  }
+
+  .card-value.large {
+    font-size: 1.75rem;
+  }
+
+  .action-buttons {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .action-btn span:last-child {
+    display: none;
+  }
+}
+.portfolio-risk-strip { margin-top: 1rem; }
+.risk-strip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .75rem; }
+.risk-strip-card { background: #f8fafc; border-radius: 8px; padding: .8rem; }
+.risk-strip-card span, .risk-strip-card small { display: block; color: #64748b; font-size: .82rem; }
+.risk-strip-card strong { display: block; margin: .3rem 0; font-size: 1.25rem; }

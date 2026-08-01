@@ -1,0 +1,275 @@
+/* K线图表页面 - 暗色金融风格 */
+
+.kline-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+  min-height: 600px;
+  background-color: #0f172a;
+  color: #e2e8f0;
+  padding: 16px;
+  box-sizing: border-box;
+  gap: 12px;
+}
+
+/* 顶部工具栏 */
+.kline-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* 搜索框 */
+.kline-search {
+  position: relative;
+  width: 320px;
+  max-width: 100%;
+}
+
+.kline-search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  background-color: #1e293b;
+  color: #f1f5f9;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.kline-search-input::placeholder {
+  color: #64748b;
+}
+
+.kline-search-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* 搜索结果下拉 */
+.kline-search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  list-style: none;
+  z-index: 100;
+  padding: 6px 0;
+  margin: 0;
+}
+
+.kline-search-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.kline-search-item:hover {
+  background-color: #334155;
+}
+
+.kline-search-name {
+  flex: 1;
+  font-weight: 500;
+  color: #f8fafc;
+}
+
+.kline-search-code {
+  font-family: 'SF Mono', monospace;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.kline-search-type {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: #0f172a;
+  color: #64748b;
+}
+
+/* 标的名称与价格 */
+.kline-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.kline-info-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.kline-info-code {
+  font-family: 'SF Mono', monospace;
+  font-size: 13px;
+  color: #64748b;
+  padding: 2px 8px;
+  background-color: #1e293b;
+  border-radius: 4px;
+}
+
+.kline-info-price {
+  font-size: 14px;
+  color: #cbd5e1;
+}
+
+/* 周期切换栏 */
+.kline-period-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kline-period-btn {
+  padding: 6px 14px;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  background-color: #1e293b;
+  color: #94a3b8;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.kline-period-btn:hover {
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.kline-period-btn.active {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+/* 指标开关栏 */
+.kline-indicator-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kline-indicator-btn {
+  padding: 6px 14px;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  background-color: #1e293b;
+  color: #94a3b8;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.kline-indicator-btn:hover {
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.kline-indicator-btn.active {
+  background-color: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+/* 状态提示 */
+.kline-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.kline-loading {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+}
+
+.kline-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+
+.kline-retry-btn {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.kline-retry-btn:hover {
+  background-color: #dc2626;
+}
+
+/* 图表容器 */
+.kline-chart-wrapper {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #0f172a;
+  position: relative;
+}
+
+.kline-chart-view {
+  width: 100%;
+  height: 100%;
+}
+
+.kline-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+  .kline-page {
+    padding: 12px;
+    gap: 10px;
+    height: calc(100vh - 52px);
+  }
+
+  .kline-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .kline-search {
+    width: 100%;
+  }
+
+  .kline-info {
+    width: 100%;
+  }
+
+  .kline-period-btn,
+  .kline-indicator-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}

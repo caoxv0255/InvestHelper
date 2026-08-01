@@ -1,0 +1,8 @@
+.transaction-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(15, 23, 42, .04); }
+.transaction-card h2 { margin: 0 0 1rem; font-size: 1.1rem; }
+.transaction-form { display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: .8rem; margin-bottom: 1rem; }
+.transaction-form label { color: #475569; font-size: .85rem; }
+.transaction-form input, .transaction-form select { display: block; width: 100%; box-sizing: border-box; margin-top: .3rem; padding: .52rem; border: 1px solid #cbd5e1; border-radius: 6px; }
+.transaction-message { margin-left: .8rem; color: #475569; }
+@media (max-width: 1000px) { .transaction-form { grid-template-columns: repeat(3, minmax(120px, 1fr)); } }
+@media (max-width: 650px) { .transaction-form { grid-template-columns: repeat(2, minmax(120px, 1fr)); } }

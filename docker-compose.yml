@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: investhelper-backend
+    environment:
+      DATABASE_URL: sqlite:////data/invest_helper.db
+      TUSHARE_TOKEN: ${TUSHARE_TOKEN:-}
+      REDIS_URL: redis://redis:6379/0
+      REDIS_ENABLED: "true"
+      CORS_ORIGINS: '["http://localhost:8080"]'
+    volumes:
+      - backend_data:/data
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      redis:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: investhelper-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    container_name: investhelper-redis
+    volumes:
+      - redis_data:/data
+
+volumes:
+  backend_data:
+  redis_data:
