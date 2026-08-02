@@ -1,15 +1,18 @@
 # ===== Web framework =====
-fastapi==0.104.1
+# fastapi 0.110+ 兼容 Python 3.13
+fastapi>=0.110,<1.0
 uvicorn[standard]==0.24.0
 python-multipart==0.0.6
 
 # ===== 数据校验 =====
-pydantic==2.5.0
-pydantic-settings==2.1.0
+# pydantic 2.7+ 兼容 Python 3.13（2.14.x pydantic-core 在 3.13 上 build 失败）
+pydantic>=2.7,<3.0
+pydantic-settings>=2.3,<3.0
 
 # ===== ORM / 迁移 =====
-sqlalchemy==2.0.23
-alembic==1.12.1
+# sqlalchemy 2.0.30+ / alembic 1.13+ 兼容 Python 3.13
+sqlalchemy>=2.0.30,<3.0
+alembic>=1.13,<2.0
 
 # ===== 环境变量加载 =====
 python-dotenv==1.0.0
