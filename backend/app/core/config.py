@@ -50,3 +50,32 @@ class Settings:
 
 
 settings = Settings()
+
+
+def effective_settings_summary() -> dict[str, str]:
+    """返回生效配置摘要（用于启动时日志打印）
+
+    不包含敏感信息（TUSHARE_TOKEN 永远不打印）。
+    """
+    cache_mode = (
+        f"redis({settings.REDIS_URL})"
+        if settings.REDIS_ENABLED and settings.REDIS_URL
+        else f"memory(max={settings.CACHE_MAX_SIZE})"
+    )
+    return {
+        "database": settings.DATABASE_URL,
+        "tushare": "enabled" if settings.TUSHARE_TOKEN else "disabled",
+        "cache": cache_mode,
+        "cors_origins": ",".join(settings.CORS_ORIGINS),
+        "daily_snapshot": (
+            f"enabled(hour={settings.DAILY_SNAPSHOT_HOUR})"
+            if settings.DAILY_SNAPSHOT_ENABLED
+            else "disabled"
+        ),
+        "news_crawl": (
+            f"enabled(interval={settings.NEWS_CRAWL_INTERVAL}s)"
+            if settings.NEWS_CRAWL_ENABLED
+            else "disabled"
+        ),
+        "akshare_throttle": f"{settings.MARKET_DATA_REQUEST_INTERVAL}s",
+    }

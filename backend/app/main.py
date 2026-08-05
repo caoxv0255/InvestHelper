@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import health, holdings, deposits, dashboard, market, signals, transactions, backtests, portfolio, portfolio_history, risk, position, sector_rotation, news, sentiment, opportunities
-from app.core.config import settings
+from app.core.config import effective_settings_summary, settings
 from app.db.session import engine, Base
 from app.models import *  # noqa: F401, F403 - 导入所有模型以确保注册到 Base.metadata
 from app.db.session import SessionLocal
@@ -14,6 +14,9 @@ from app.services.portfolio import capture_portfolio_snapshot
 from app.services import news_crawler
 
 logger = logging.getLogger(__name__)
+
+# 应用启动时打印生效配置（不暴露 TUSHARE_TOKEN 等敏感字段）
+logger.info("InvestHelper starting with config: %s", effective_settings_summary())
 
 
 async def _daily_snapshot_loop():
