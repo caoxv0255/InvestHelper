@@ -26,7 +26,6 @@ import {
   calculateTakeProfitStopLoss,
   updateTakeProfitStopLoss,
 } from '../api/position'
-import { SignalBadgeFromResult } from '../components/SignalBadge'
 import type {
   Holding,
   HoldingCreate,
@@ -37,7 +36,7 @@ import type {
   PositionAlertItem,
   TakeProfitStopLossResult,
 } from '../types'
-import { formatCurrency, formatPercent, formatDate } from '../utils/format'
+import { formatDate } from '../utils/format'
 import { HoldingTable } from '../features/portfolio/components/HoldingTable'
 import { DepositTable } from '../features/portfolio/components/DepositTable'
 import { HoldingFormModal } from '../features/portfolio/components/HoldingFormModal'
@@ -46,6 +45,9 @@ import {
   DeleteConfirmModal,
   type DeleteTarget,
 } from '../features/portfolio/components/DeleteConfirmModal'
+import { SignalDetailModal } from '../features/portfolio/components/SignalDetailModal'
+import { TpSlModal } from '../features/portfolio/components/TpSlModal'
+import { SuggestionsModal } from '../features/portfolio/components/SuggestionsModal'
 import '../styles/Portfolio.css'
 
 type TabType = 'holdings' | 'deposits'
@@ -64,7 +66,6 @@ const Portfolio = () => {
   const [signalMap, setSignalMap] = useState<Record<string, TechnicalSignal>>({})
   const [signalsLoading, setSignalsLoading] = useState(false)
   const [selectedSignal, setSelectedSignal] = useState<TechnicalSignal | null>(null)
-  const [signalModalVisible, setSignalModalVisible] = useState(false)
 
   // 仓位建议相关状态
   const [positionSuggestions, setPositionSuggestions] = useState<PositionSuggestion[]>([])
@@ -477,12 +478,10 @@ const Portfolio = () => {
     const signal = signalMap[holding.code]
     if (signal) {
       setSelectedSignal(signal)
-      setSignalModalVisible(true)
     }
   }
 
   const closeSignalModal = () => {
-    setSignalModalVisible(false)
     setSelectedSignal(null)
   }
 
@@ -594,214 +593,31 @@ const Portfolio = () => {
       />
 
       {/* 技术信号详情弹窗 */}
-      {signalModalVisible && selectedSignal && (
-        <div className="modal-overlay" onClick={closeSignalModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>
-                {selectedSignal.name || selectedSignal.code} 技术信号
-                <span style={{ marginLeft: '0.75rem' }}>
-                  <SignalBadgeFromResult signal={selectedSignal} size="medium" />
-                </span>
-              </h3>
-              <button className="modal-close" onClick={closeSignalModal}>×</button>
-            </div>
-            <div className="modal-body">
-              <div className="signal-detail-section">
-                <div className="signal-detail-title">综合评分</div>
-                <div className="signal-detail-score">
-                  <span>{selectedSignal.score}</span>
-                  <div className="signal-score-bar">
-                    <div
-                      className="signal-score-fill"
-                      style={{ width: `${selectedSignal.score}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="signal-detail-title">研判结论</div>
-                <ul className="signal-detail-list">
-                  {selectedSignal.reasons.map((reason, index) => (
-                    <li key={index}>{reason}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="signal-detail-section">
-                <div className="signal-detail-title">分项信号</div>
-                {selectedSignal.signals.map((item) => (
-                  <div key={item.category} style={{ marginBottom: '0.75rem' }}>
-                    <strong>{item.category}</strong>
-                    {!item.valid ? (
-                      <div className="signal-detail-empty">{item.reason}</div>
-                    ) : item.signals.length === 0 ? (
-                      <div className="signal-detail-empty">暂无明确信号</div>
-                    ) : (
-                      <ul className="signal-detail-list">
-                        {item.signals.map((signal, idx) => (
-                          <li key={idx}>{signal}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {selectedSignal.error && (
-                <div className="signal-detail-section">
-                  <div className="signal-detail-title">异常信息</div>
-                  <div className="signal-detail-empty">{selectedSignal.error}</div>
-                </div>
-              )}
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={closeSignalModal}>关闭</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SignalDetailModal
+        signal={selectedSignal}
+        onClose={closeSignalModal}
+      />
 
       {/* 止盈止损设置弹窗 */}
-      {tpSlModalVisible && editingTpSlHolding && (
-        <div className="modal-overlay" onClick={closeTpSlModal}>
-          <div className="modal-content modal-small" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>设置止盈止损 - {editingTpSlHolding.name}</h3>
-              <button className="modal-close" onClick={closeTpSlModal}>×</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">成本价</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={editingTpSlHolding.cost_price}
-                    disabled
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">当前价</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={editingTpSlHolding.current_price ?? editingTpSlHolding.cost_price}
-                    disabled
-                  />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">止盈价</label>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    className="form-input"
-                    value={tpSlForm.take_profit_price}
-                    onChange={(e) =>
-                      setTpSlForm({ ...tpSlForm, take_profit_price: e.target.value })
-                    }
-                    placeholder="高于当前价"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">止损价</label>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    className="form-input"
-                    value={tpSlForm.stop_loss_price}
-                    onChange={(e) =>
-                      setTpSlForm({ ...tpSlForm, stop_loss_price: e.target.value })
-                    }
-                    placeholder="低于当前价"
-                  />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group form-group-full">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={autoCalculateTpSl}
-                    disabled={tpSlLoading}
-                  >
-                    {tpSlLoading ? '计算中...' : '基于 ATR 自动计算'}
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={closeTpSlModal}>取消</button>
-              <button className="btn btn-primary" onClick={submitTpSlForm}>保存</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TpSlModal
+        visible={tpSlModalVisible}
+        holding={editingTpSlHolding}
+        form={tpSlForm}
+        loading={tpSlLoading}
+        onChange={setTpSlForm}
+        onAutoCalculate={autoCalculateTpSl}
+        onSubmit={submitTpSlForm}
+        onClose={closeTpSlModal}
+      />
 
       {/* 仓位建议弹窗 */}
-      {suggestionsModalVisible && (
-        <div className="modal-overlay" onClick={closeSuggestionsModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>仓位建议</h3>
-              <button className="modal-close" onClick={closeSuggestionsModal}>×</button>
-            </div>
-            <div className="modal-body">
-              <div className="suggestion-summary">
-                总资产：{formatCurrency(suggestionSummary.total_assets)}，
-                风险承受：{suggestionSummary.risk_tolerance * 100}%
-              </div>
-              {suggestionsLoading ? (
-                <div className="loading-container">
-                  <div className="loading-spinner"></div>
-                  <span>计算中...</span>
-                </div>
-              ) : positionSuggestions.length === 0 ? (
-                <div className="empty-cell">暂无可分析的持仓建议</div>
-              ) : (
-                <div className="table-container">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>代码</th>
-                        <th>名称</th>
-                        <th className="text-center">评级</th>
-                        <th className="text-right">当前仓位</th>
-                        <th className="text-right">建议仓位</th>
-                        <th className="text-right">建议金额</th>
-                        <th>说明</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {positionSuggestions.map((s) => (
-                        <tr key={s.holding_id}>
-                          <td className="code-cell">{s.code}</td>
-                          <td className="name-cell">{s.name}</td>
-                          <td className="text-center">
-                            <span className={`signal-badge small ${s.rating}`}>
-                              {s.rating.toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="text-right">
-                            {formatPercent(s.current_position_ratio * 100)}
-                          </td>
-                          <td className="text-right">
-                            {formatPercent(s.suggested_ratio * 100)}
-                          </td>
-                          <td className="text-right">{formatCurrency(s.suggested_value)}</td>
-                          <td className="text-muted">{s.reason}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={closeSuggestionsModal}>关闭</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SuggestionsModal
+        visible={suggestionsModalVisible}
+        summary={suggestionSummary}
+        suggestions={positionSuggestions}
+        loading={suggestionsLoading}
+        onClose={closeSuggestionsModal}
+      />
     </div>
   )
 }
