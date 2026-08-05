@@ -3,10 +3,15 @@
  *
  * 状态管理 + 数据 fetch + 弹窗处理。
  * 表格 / 简单表单 / 删除确认已抽到 features/portfolio/components/；
- * 剩余 3 个 modal（止盈止损、技术信号详情、仓位建议）仍在本文件，
- * 后续可继续抽。
+ * 剩余 modal 在本文件用 useModal<T>() 统一管理，异步数据用 useAsyncResource<T>()。
+ *
+ * 本地仍留的 useState：
+ *   - activeTab / 3 个 filter（页面内 UI 输入）
+ *   - auxiliaryError（横跨多个资源的统一错误条）
+ *   - 3 个 form 值/错误（传给对应 FormModal 组件，由它们内部 antd Form 渲染）
+ *   - tpSlForm + tpSlLoading（TpSlModal 专有交互态）
  */
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   getHoldings,
   createHolding,
@@ -37,6 +42,7 @@ import type {
   TakeProfitStopLossResult,
 } from '../types'
 import { formatDate } from '../utils/format'
+import { useAsyncResource, useModal } from '../hooks'
 import { HoldingTable } from '../features/portfolio/components/HoldingTable'
 import { DepositTable } from '../features/portfolio/components/DepositTable'
 import { HoldingFormModal } from '../features/portfolio/components/HoldingFormModal'
@@ -52,218 +58,150 @@ import '../styles/Portfolio.css'
 
 type TabType = 'holdings' | 'deposits'
 
-const Portfolio = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('holdings')
+const INITIAL_HOLDING: HoldingCreate = {
+  platform: 'alipay',
+  asset_type: 'fund',
+  code: '',
+  name: '',
+  quantity: 0,
+  cost_price: 0,
+  current_price: null,
+  take_profit_price: null,
+  stop_loss_price: null,
+  industry: null,
+  buy_date: null,
+  notes: null,
+}
 
-  // 持仓相关状态
-  const [holdings, setHoldings] = useState<Holding[]>([])
-  const [holdingsLoading, setHoldingsLoading] = useState(false)
-  const [holdingsError, setHoldingsError] = useState<string | null>(null)
+const INITIAL_DEPOSIT = (today: string): DepositCreate => ({
+  bank: 'cmb',
+  product_name: '',
+  principal: 0,
+  annual_rate: 0,
+  start_date: today,
+  maturity_date: today,
+  expected_return: 0,
+  status: 'active',
+  notes: null,
+})
+
+const Portfolio = () => {
+  // ===== Tab & filters (local UI 状态) =====
+  const [activeTab, setActiveTab] = useState<TabType>('holdings')
   const [platformFilter, setPlatformFilter] = useState<string>('')
   const [assetTypeFilter, setAssetTypeFilter] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState<string>('')
 
-  // 技术信号相关状态
-  const [signalMap, setSignalMap] = useState<Record<string, TechnicalSignal>>({})
-  const [signalsLoading, setSignalsLoading] = useState(false)
-  const [selectedSignal, setSelectedSignal] = useState<TechnicalSignal | null>(null)
-
-  // 仓位建议相关状态
-  const [positionSuggestions, setPositionSuggestions] = useState<PositionSuggestion[]>([])
-  const [suggestionsLoading, setSuggestionsLoading] = useState(false)
-  const [suggestionsModalVisible, setSuggestionsModalVisible] = useState(false)
-  const [suggestionSummary, setSuggestionSummary] = useState<{ total_assets: number; risk_tolerance: number }>({
-    total_assets: 0,
-    risk_tolerance: 0.02,
-  })
-
-  // 辅助功能（信号/建议/预警）加载失败的统一展示
+  // ===== Auxiliary error banner =====
   const [auxiliaryError, setAuxiliaryError] = useState<string | null>(null)
   const setAuxError = (msg: string) => {
     setAuxiliaryError(msg)
-    // 同时打日志方便排查
     // eslint-disable-next-line no-console
     console.warn('[auxiliary load]', msg)
   }
 
-  // 止盈止损预警相关状态
-  const [positionAlerts, setPositionAlerts] = useState<PositionAlertItem[]>([])
+  // ===== Holdings (异步资源) =====
+  const holdings = useAsyncResource(
+    () => getHoldings(platformFilter || undefined, assetTypeFilter || undefined),
+    [activeTab, platformFilter, assetTypeFilter],
+    { initialData: [] as Holding[], skip: activeTab !== 'holdings' },
+  )
 
-  // 止盈止损设置弹窗状态
-  const [tpSlModalVisible, setTpSlModalVisible] = useState(false)
-  const [editingTpSlHolding, setEditingTpSlHolding] = useState<Holding | null>(null)
+  // ===== 技术信号（依赖 holdings.data，自动跟随） =====
+  const signals = useAsyncResource(
+    async () => {
+      const target = holdings.data ?? []
+      const items = target
+        .filter((h) => h.asset_type === 'stock' || h.asset_type === 'fund')
+        .map((h) => ({ code: h.code, period: 'daily' as const, asset_type: h.asset_type }))
+      if (items.length === 0) return {} as Record<string, TechnicalSignal>
+      const response = await batchGetSignals(items)
+      const map: Record<string, TechnicalSignal> = {}
+      response.results.forEach((s) => {
+        map[s.code] = s
+      })
+      return map
+    },
+    [holdings.data, activeTab],
+    {
+      initialData: {} as Record<string, TechnicalSignal>,
+      skip: activeTab !== 'holdings',
+      onError: (e) => setAuxError(`加载技术信号失败：${e.message}`),
+    },
+  )
+
+  // ===== 仓位建议 =====
+  const positionSuggestions = useAsyncResource(
+    async () => {
+      const data = await getPositionSuggestions()
+      return {
+        suggestions: data.suggestions,
+        summary: { total_assets: data.total_assets, risk_tolerance: data.risk_tolerance },
+      }
+    },
+    [activeTab],
+    {
+      initialData: {
+        suggestions: [] as PositionSuggestion[],
+        summary: { total_assets: 0, risk_tolerance: 0.02 },
+      },
+      skip: activeTab !== 'holdings',
+      onError: (e) => setAuxError(`加载仓位建议失败：${e.message}`),
+    },
+  )
+
+  // ===== 止盈止损预警 =====
+  const positionAlerts = useAsyncResource(
+    async () => (await getPositionAlerts()).alerts,
+    [activeTab],
+    {
+      initialData: [] as PositionAlertItem[],
+      skip: activeTab !== 'holdings',
+      onError: (e) => setAuxError(`加载止盈止损预警失败：${e.message}`),
+    },
+  )
+
+  // ===== Deposits =====
+  const deposits = useAsyncResource(
+    () => getDeposits(statusFilter || undefined),
+    [activeTab, statusFilter],
+    { initialData: [] as Deposit[], skip: activeTab !== 'deposits' },
+  )
+
+  // ===== Modals =====
+  const holdingModal = useModal<Holding>()
+  const depositModal = useModal<Deposit>()
+  const deleteModal = useModal<DeleteTarget>()
+  const tpSlModal = useModal<Holding>()
+  const signalModal = useModal<TechnicalSignal>()
+  const suggestionsModal = useModal()
+
+  // ===== Holding form (传给 HoldingFormModal) =====
+  const [holdingForm, setHoldingForm] = useState<HoldingCreate>(INITIAL_HOLDING)
+  const [holdingFormErrors, setHoldingFormErrors] = useState<Record<string, string>>({})
+
+  // ===== Deposit form (传给 DepositFormModal) =====
+  const [depositForm, setDepositForm] = useState<DepositCreate>(() =>
+    INITIAL_DEPOSIT(formatDate(new Date())),
+  )
+  const [depositFormErrors, setDepositFormErrors] = useState<Record<string, string>>({})
+
+  // ===== TpSl form (TpSlModal 专有) =====
   const [tpSlForm, setTpSlForm] = useState({
     take_profit_price: '',
     stop_loss_price: '',
   })
   const [tpSlLoading, setTpSlLoading] = useState(false)
 
-  // 定期理财相关状态
-  const [deposits, setDeposits] = useState<Deposit[]>([])
-  const [depositsLoading, setDepositsLoading] = useState(false)
-  const [depositsError, setDepositsError] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState<string>('')
-
-  // 弹窗相关状态 - 持仓
-  const [holdingModalVisible, setHoldingModalVisible] = useState(false)
-  const [editingHolding, setEditingHolding] = useState<Holding | null>(null)
-  const [holdingForm, setHoldingForm] = useState<HoldingCreate>({
-    platform: 'alipay',
-    asset_type: 'fund',
-    code: '',
-    name: '',
-    quantity: 0,
-    cost_price: 0,
-    current_price: null,
-    take_profit_price: null,
-    stop_loss_price: null,
-    industry: null,
-    buy_date: null,
-    notes: null,
-  })
-  const [holdingFormErrors, setHoldingFormErrors] = useState<Record<string, string>>({})
-
-  // 弹窗相关状态 - 定期理财
-  const [depositModalVisible, setDepositModalVisible] = useState(false)
-  const [editingDeposit, setEditingDeposit] = useState<Deposit | null>(null)
-  const [depositForm, setDepositForm] = useState<DepositCreate>({
-    bank: 'cmb',
-    product_name: '',
-    principal: 0,
-    annual_rate: 0,
-    start_date: '',
-    maturity_date: '',
-    expected_return: 0,
-    status: 'active',
-    notes: null,
-  })
-  const [depositFormErrors, setDepositFormErrors] = useState<Record<string, string>>({})
-
-  // 删除确认弹窗
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
-
-  // ===== 数据 fetch =====
-
-  const fetchHoldings = async () => {
-    setHoldingsLoading(true)
-    setHoldingsError(null)
-    try {
-      const data = await getHoldings(
-        platformFilter || undefined,
-        assetTypeFilter || undefined,
-      )
-      setHoldings(data)
-      // 持仓加载成功后，批量拉取技术信号
-      fetchSignals(data)
-    } catch (err: any) {
-      setHoldingsError(err.message || '加载持仓列表失败')
-    } finally {
-      setHoldingsLoading(false)
-    }
-  }
-
-  const fetchSignals = async (targetHoldings: Holding[]) => {
-    const analyzable = targetHoldings.filter(
-      (h) => h.asset_type === 'stock' || h.asset_type === 'fund',
-    )
-    if (analyzable.length === 0) {
-      setSignalMap({})
-      return
-    }
-
-    setSignalsLoading(true)
-    try {
-      const items = analyzable.map((h) => ({
-        code: h.code,
-        period: 'daily' as const,
-        asset_type: h.asset_type,
-      }))
-      const response = await batchGetSignals(items)
-      const map: Record<string, TechnicalSignal> = {}
-      response.results.forEach((signal) => {
-        map[signal.code] = signal
-      })
-      setSignalMap(map)
-    } catch (err: any) {
-      setAuxError(`加载技术信号失败：${err?.message ?? err}`)
-    } finally {
-      setSignalsLoading(false)
-    }
-  }
-
-  const fetchPositionSuggestions = async () => {
-    setSuggestionsLoading(true)
-    try {
-      const data = await getPositionSuggestions()
-      setPositionSuggestions(data.suggestions)
-      setSuggestionSummary({
-        total_assets: data.total_assets,
-        risk_tolerance: data.risk_tolerance,
-      })
-    } catch (err: any) {
-      setAuxError(`加载仓位建议失败：${err?.message ?? err}`)
-    } finally {
-      setSuggestionsLoading(false)
-    }
-  }
-
-  const fetchPositionAlerts = async () => {
-    try {
-      const data = await getPositionAlerts()
-      setPositionAlerts(data.alerts)
-    } catch (err: any) {
-      setAuxError(`加载止盈止损预警失败：${err?.message ?? err}`)
-    }
-  }
-
-  const fetchDeposits = async () => {
-    setDepositsLoading(true)
-    setDepositsError(null)
-    try {
-      const data = await getDeposits(statusFilter || undefined)
-      setDeposits(data)
-    } catch (err: any) {
-      setDepositsError(err.message || '加载定期理财列表失败')
-    } finally {
-      setDepositsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (activeTab === 'holdings') {
-      fetchHoldings()
-      fetchPositionSuggestions()
-      fetchPositionAlerts()
-    } else {
-      fetchDeposits()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, platformFilter, assetTypeFilter, statusFilter])
-
-  // ===== 持仓表单 handler =====
+  // ===== Holding modal handlers =====
 
   const openAddHoldingModal = () => {
-    setEditingHolding(null)
-    setHoldingForm({
-      platform: 'alipay',
-      asset_type: 'fund',
-      code: '',
-      name: '',
-      quantity: 0,
-      cost_price: 0,
-      current_price: null,
-      take_profit_price: null,
-      stop_loss_price: null,
-      industry: null,
-      buy_date: null,
-      notes: null,
-    })
+    setHoldingForm({ ...INITIAL_HOLDING })
     setHoldingFormErrors({})
-    setHoldingModalVisible(true)
+    holdingModal.open()
   }
 
   const openEditHoldingModal = (holding: Holding) => {
-    setEditingHolding(holding)
     setHoldingForm({
       platform: holding.platform,
       asset_type: holding.asset_type,
@@ -279,7 +217,7 @@ const Portfolio = () => {
       notes: holding.notes,
     })
     setHoldingFormErrors({})
-    setHoldingModalVisible(true)
+    holdingModal.open(holding)
   }
 
   const validateHoldingForm = (): boolean => {
@@ -298,40 +236,28 @@ const Portfolio = () => {
     if (!validateHoldingForm()) return
 
     try {
-      if (editingHolding) {
-        await updateHolding(editingHolding.id, holdingForm)
+      const editing = holdingModal.data
+      if (editing) {
+        await updateHolding(editing.id, holdingForm)
       } else {
         await createHolding(holdingForm)
       }
-      setHoldingModalVisible(false)
-      fetchHoldings()
+      holdingModal.close()
+      void holdings.refetch()
     } catch (err: any) {
       alert(err.message || '保存失败')
     }
   }
 
-  // ===== 定期表单 handler =====
+  // ===== Deposit modal handlers =====
 
   const openAddDepositModal = () => {
-    setEditingDeposit(null)
-    const today = formatDate(new Date())
-    setDepositForm({
-      bank: 'cmb',
-      product_name: '',
-      principal: 0,
-      annual_rate: 0,
-      start_date: today,
-      maturity_date: today,
-      expected_return: 0,
-      status: 'active',
-      notes: null,
-    })
+    setDepositForm(INITIAL_DEPOSIT(formatDate(new Date())))
     setDepositFormErrors({})
-    setDepositModalVisible(true)
+    depositModal.open()
   }
 
   const openEditDepositModal = (deposit: Deposit) => {
-    setEditingDeposit(deposit)
     setDepositForm({
       bank: deposit.bank,
       product_name: deposit.product_name,
@@ -344,7 +270,7 @@ const Portfolio = () => {
       notes: deposit.notes,
     })
     setDepositFormErrors({})
-    setDepositModalVisible(true)
+    depositModal.open(deposit)
   }
 
   const validateDepositForm = (): boolean => {
@@ -376,60 +302,60 @@ const Portfolio = () => {
     if (!validateDepositForm()) return
 
     try {
-      if (editingDeposit) {
-        await updateDeposit(editingDeposit.id, depositForm)
+      const editing = depositModal.data
+      if (editing) {
+        await updateDeposit(editing.id, depositForm)
       } else {
         await createDeposit(depositForm)
       }
-      setDepositModalVisible(false)
-      fetchDeposits()
+      depositModal.close()
+      void deposits.refetch()
     } catch (err: any) {
       alert(err.message || '保存失败')
     }
   }
 
-  // ===== 删除 handler =====
+  // ===== Delete handlers =====
 
   const openDeleteModal = (type: 'holding' | 'deposit', id: number, name: string) => {
-    setDeleteTarget({ type, id, name })
-    setDeleteModalVisible(true)
+    deleteModal.open({ type, id, name })
   }
 
   const confirmDelete = async () => {
-    if (!deleteTarget) return
+    const target = deleteModal.data
+    if (!target) return
 
     try {
-      if (deleteTarget.type === 'holding') {
-        await deleteHolding(deleteTarget.id)
-        fetchHoldings()
+      if (target.type === 'holding') {
+        await deleteHolding(target.id)
+        void holdings.refetch()
       } else {
-        await deleteDeposit(deleteTarget.id)
-        fetchDeposits()
+        await deleteDeposit(target.id)
+        void deposits.refetch()
       }
-      setDeleteModalVisible(false)
-      setDeleteTarget(null)
+      deleteModal.close()
     } catch (err: any) {
       alert(err.message || '删除失败')
     }
   }
 
-  // ===== 止盈止损 handler =====
+  // ===== TpSl handlers =====
 
   const openTpSlModal = (holding: Holding) => {
-    setEditingTpSlHolding(holding)
     setTpSlForm({
       take_profit_price: holding.take_profit_price?.toString() ?? '',
       stop_loss_price: holding.stop_loss_price?.toString() ?? '',
     })
-    setTpSlModalVisible(true)
+    tpSlModal.open(holding)
   }
 
   const autoCalculateTpSl = async () => {
-    if (!editingTpSlHolding) return
+    const editing = tpSlModal.data
+    if (!editing) return
     setTpSlLoading(true)
     try {
       const result: TakeProfitStopLossResult = await calculateTakeProfitStopLoss(
-        editingTpSlHolding.id,
+        editing.id,
         2.0,
       )
       setTpSlForm({
@@ -444,7 +370,8 @@ const Portfolio = () => {
   }
 
   const submitTpSlForm = async () => {
-    if (!editingTpSlHolding) return
+    const editing = tpSlModal.data
+    if (!editing) return
 
     const takeProfitPrice = tpSlForm.take_profit_price
       ? parseFloat(tpSlForm.take_profit_price)
@@ -454,45 +381,35 @@ const Portfolio = () => {
       : null
 
     try {
-      await updateTakeProfitStopLoss(editingTpSlHolding.id, {
+      await updateTakeProfitStopLoss(editing.id, {
         take_profit_price: takeProfitPrice,
         stop_loss_price: stopLossPrice,
       })
-      setTpSlModalVisible(false)
-      fetchHoldings()
-      fetchPositionAlerts()
+      tpSlModal.close()
+      setTpSlForm({ take_profit_price: '', stop_loss_price: '' })
+      void holdings.refetch()
+      void positionAlerts.refetch()
     } catch (err: any) {
       alert(err.message || '保存失败')
     }
   }
 
   const closeTpSlModal = () => {
-    setTpSlModalVisible(false)
-    setEditingTpSlHolding(null)
+    tpSlModal.close()
     setTpSlForm({ take_profit_price: '', stop_loss_price: '' })
   }
 
-  // ===== 技术信号 modal handler =====
+  // ===== Signal modal handler =====
 
   const openSignalModal = (holding: Holding) => {
-    const signal = signalMap[holding.code]
-    if (signal) {
-      setSelectedSignal(signal)
-    }
+    const signal = signals.data?.[holding.code]
+    if (signal) signalModal.open(signal)
   }
 
-  const closeSignalModal = () => {
-    setSelectedSignal(null)
-  }
-
-  // ===== 仓位建议 modal handler =====
+  // ===== Suggestions modal handler =====
 
   const openSuggestionsModal = () => {
-    setSuggestionsModalVisible(true)
-  }
-
-  const closeSuggestionsModal = () => {
-    setSuggestionsModalVisible(false)
+    suggestionsModal.open()
   }
 
   return (
@@ -524,19 +441,19 @@ const Portfolio = () => {
       {/* 持仓 tab */}
       {activeTab === 'holdings' && (
         <HoldingTable
-          holdings={holdings}
-          holdingsLoading={holdingsLoading}
-          holdingsError={holdingsError}
-          signalMap={signalMap}
-          signalsLoading={signalsLoading}
-          positionSuggestions={positionSuggestions}
-          suggestionsLoading={suggestionsLoading}
-          positionAlerts={positionAlerts}
+          holdings={holdings.data ?? []}
+          holdingsLoading={holdings.loading}
+          holdingsError={holdings.error}
+          signalMap={signals.data ?? {}}
+          signalsLoading={signals.loading}
+          positionSuggestions={positionSuggestions.data?.suggestions ?? []}
+          suggestionsLoading={positionSuggestions.loading}
+          positionAlerts={positionAlerts.data ?? []}
           platformFilter={platformFilter}
           assetTypeFilter={assetTypeFilter}
           onPlatformFilterChange={setPlatformFilter}
           onAssetTypeFilterChange={setAssetTypeFilter}
-          onRefresh={fetchHoldings}
+          onRefresh={() => void holdings.refetch()}
           onOpenSuggestions={openSuggestionsModal}
           onAddHolding={openAddHoldingModal}
           onEditHolding={openEditHoldingModal}
@@ -549,12 +466,12 @@ const Portfolio = () => {
       {/* 定期 tab */}
       {activeTab === 'deposits' && (
         <DepositTable
-          deposits={deposits}
-          depositsLoading={depositsLoading}
-          depositsError={depositsError}
+          deposits={deposits.data ?? []}
+          depositsLoading={deposits.loading}
+          depositsError={deposits.error}
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
-          onRefresh={fetchDeposits}
+          onRefresh={() => void deposits.refetch()}
           onAddDeposit={openAddDepositModal}
           onEditDeposit={openEditDepositModal}
           onDeleteDeposit={(id, name) => openDeleteModal('deposit', id, name)}
@@ -563,60 +480,60 @@ const Portfolio = () => {
 
       {/* 持仓表单弹窗 */}
       <HoldingFormModal
-        visible={holdingModalVisible}
-        editing={editingHolding}
+        visible={holdingModal.visible}
+        editing={holdingModal.data}
         form={holdingForm}
         errors={holdingFormErrors}
         onChange={setHoldingForm}
-        onCancel={() => setHoldingModalVisible(false)}
-        onSubmit={submitHoldingForm}
+        onCancel={holdingModal.close}
+        onSubmit={() => void submitHoldingForm()}
       />
 
       {/* 定期表单弹窗 */}
       <DepositFormModal
-        visible={depositModalVisible}
-        editing={editingDeposit}
+        visible={depositModal.visible}
+        editing={depositModal.data}
         form={depositForm}
         errors={depositFormErrors}
         onChange={setDepositForm}
-        onCancel={() => setDepositModalVisible(false)}
-        onSubmit={submitDepositForm}
+        onCancel={depositModal.close}
+        onSubmit={() => void submitDepositForm()}
         onBlurCalculate={calculateExpectedReturn}
       />
 
       {/* 删除确认弹窗 */}
       <DeleteConfirmModal
-        visible={deleteModalVisible}
-        target={deleteTarget}
-        onCancel={() => setDeleteModalVisible(false)}
-        onConfirm={confirmDelete}
+        visible={deleteModal.visible}
+        target={deleteModal.data}
+        onCancel={deleteModal.close}
+        onConfirm={() => void confirmDelete()}
       />
 
       {/* 技术信号详情弹窗 */}
       <SignalDetailModal
-        signal={selectedSignal}
-        onClose={closeSignalModal}
+        signal={signalModal.data}
+        onClose={signalModal.close}
       />
 
       {/* 止盈止损设置弹窗 */}
       <TpSlModal
-        visible={tpSlModalVisible}
-        holding={editingTpSlHolding}
+        visible={tpSlModal.visible}
+        holding={tpSlModal.data}
         form={tpSlForm}
         loading={tpSlLoading}
         onChange={setTpSlForm}
-        onAutoCalculate={autoCalculateTpSl}
-        onSubmit={submitTpSlForm}
+        onAutoCalculate={() => void autoCalculateTpSl()}
+        onSubmit={() => void submitTpSlForm()}
         onClose={closeTpSlModal}
       />
 
       {/* 仓位建议弹窗 */}
       <SuggestionsModal
-        visible={suggestionsModalVisible}
-        summary={suggestionSummary}
-        suggestions={positionSuggestions}
-        loading={suggestionsLoading}
-        onClose={closeSuggestionsModal}
+        visible={suggestionsModal.visible}
+        summary={positionSuggestions.data?.summary ?? { total_assets: 0, risk_tolerance: 0.02 }}
+        suggestions={positionSuggestions.data?.suggestions ?? []}
+        loading={positionSuggestions.loading}
+        onClose={suggestionsModal.close}
       />
     </div>
   )
