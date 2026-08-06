@@ -24,7 +24,7 @@ import type {
   TakeProfitStopLossResult,
 } from '../types'
 import { useToast } from '../components/Toast'
-import { useModal } from '../hooks'
+import { useModal, useDocumentTitle } from '../hooks'
 import { usePortfolioData } from '../features/portfolio/hooks/usePortfolioData'
 import { usePortfolioActions } from '../features/portfolio/hooks/usePortfolioActions'
 import { HoldingTable } from '../features/portfolio/components/HoldingTable'
@@ -41,6 +41,11 @@ import { SuggestionsModal } from '../features/portfolio/components/SuggestionsMo
 import '../styles/Portfolio.css'
 
 const Portfolio = () => {
+  // ===== Document title (browser tab) =====
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _title = '持仓管理'
+  useDocumentTitle(_title)
+
   // ===== Data ownership (Phase 2A: 接入 usePortfolioData) =====
   const {
     activeTab,
