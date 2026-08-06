@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { runBacktest, type BacktestRequest, type BacktestResult } from '../api/backtests'
+import { TableSkeleton } from '../components/TableSkeleton'
 import { getDailyKline } from '../api/market'
 import '../styles/StrategyLab.css'
 
@@ -117,8 +118,14 @@ const StrategyLab = () => {
         </section>
         <section className="strategy-card">
           <h2>结果</h2>
-          {!metrics && <p className="muted">点击“运行回测”查看指标。</p>}
-          {metrics && <>
+          {!metrics && !loading && <p className="muted">点击"运行回测"查看指标。</p>}
+          {loading && !metrics ? (
+            <div className="metric-grid">
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={i}><TableSkeleton rows={2} columns={1} /></div>
+              ))}
+            </div>
+          ) : metrics && <>
             <div className="metric-grid">
               <div><span>累计收益</span><strong>{(Number(metrics.total_return) * 100).toFixed(2)}%</strong></div>
               <div><span>最大回撤</span><strong>{(Number(metrics.max_drawdown) * 100).toFixed(2)}%</strong></div>
