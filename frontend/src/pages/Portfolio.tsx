@@ -90,6 +90,7 @@ const Portfolio = () => {
     closeDepositModal: depositModal.close,
     closeDeleteModal: deleteModal.close,
     onError: (msg) => toast.show(msg, 'error'),
+    onSuccess: (msg) => toast.show(msg, 'success'),
   })
 
   // thin wrappers — 保持 JSX 现有 onSubmit/onConfirm 签名 1:1，
