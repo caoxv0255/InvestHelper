@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createTransaction, deleteTransaction, getTransactions, type Transaction, type TransactionCreate, type TransactionSide } from '../api/transactions'
+import { TableSkeleton } from '../components/TableSkeleton'
 import '../styles/Transactions.css'
 
 const today = new Date().toISOString().slice(0, 10)
@@ -69,7 +70,7 @@ const Transactions = () => {
     <section className="transaction-card">
       <h2>历史流水</h2>
       <div className="table-container"><table className="data-table"><thead><tr><th>日期</th><th>账户</th><th>标的</th><th>类型</th><th>数量</th><th>价格</th><th>金额</th><th>操作</th></tr></thead><tbody>
-        {items.length === 0 ? <tr><td colSpan={8} className="empty-cell">暂无交易流水</td></tr> : items.map((item) => <tr key={item.id}><td>{item.trade_date}</td><td>{item.account}</td><td>{item.name} ({item.code})</td><td>{sideLabel[item.side]}</td><td>{item.quantity}</td><td>{item.price} {item.currency}</td><td>{(item.quantity * item.price).toFixed(2)}</td><td><button className="btn-link btn-delete" onClick={() => remove(item)}>删除</button></td></tr>)}
+        {loading && items.length === 0 ? <tr><td colSpan={8}><TableSkeleton rows={5} columns={8} /></td></tr> : items.length === 0 ? <tr><td colSpan={8} className="empty-cell">暂无交易流水</td></tr> : items.map((item) => <tr key={item.id}><td>{item.trade_date}</td><td>{item.account}</td><td>{item.name} ({item.code})</td><td>{sideLabel[item.side]}</td><td>{item.quantity}</td><td>{item.price} {item.currency}</td><td>{(item.quantity * item.price).toFixed(2)}</td><td><button className="btn-link btn-delete" onClick={() => remove(item)}>删除</button></td></tr>)}
       </tbody></table></div>
     </section>
   </div>
