@@ -86,6 +86,13 @@ export const HoldingFormModal = ({
     if (visible) {
       form.reset(editing ? holdingFromEditing(editing) : INITIAL_HOLDING)
       setLastAutoFilledCode(editing ? '' : '')
+      // auto-focus 第一个 input（让用户立刻开始输入）
+      requestAnimationFrame(() => {
+        const firstInput = document.querySelector<HTMLInputElement>(
+          '.modal-content input:not([type=button]), .modal-content select, .modal-content textarea',
+        )
+        firstInput?.focus()
+      })
     }
   }, [visible, editing?.id, form.reset])
 
