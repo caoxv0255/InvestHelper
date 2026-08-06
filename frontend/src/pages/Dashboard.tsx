@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import ReactECharts from 'echarts-for-react'
+import { TableSkeleton } from '../components/TableSkeleton'
 import { getDashboardSummary } from '../api/dashboard'
 import type { DashboardSummary } from '../types'
 import { getPortfolioSnapshot, type PortfolioSnapshot } from '../api/portfolio'
@@ -203,12 +204,16 @@ const Dashboard = () => {
     <div className="dashboard-page">
       <h1 className="page-title">资产概览</h1>
 
-      {loading && (
+      {loading && !data ? (
+        <div className="dashboard-skeleton">
+          <TableSkeleton rows={4} columns={3} />
+        </div>
+      ) : loading ? (
         <div className="loading-container">
           <div className="loading-spinner"></div>
           <span>加载中...</span>
         </div>
-      )}
+      ) : null}
 
       {error && (
         <div className="error-message">
