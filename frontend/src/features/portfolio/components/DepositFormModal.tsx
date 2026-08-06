@@ -102,6 +102,11 @@ export const DepositFormModal = ({
     const newErrors = validate(values)
     if (Object.keys(newErrors).length > 0) {
       form.setErrors(newErrors)
+      const firstError = Object.keys(newErrors)[0]
+      const el = document.querySelector<HTMLElement>(
+        `[data-field="${firstError}"]`,
+      )
+      el?.focus()
       return
     }
     onSubmit(values)
@@ -142,6 +147,7 @@ export const DepositFormModal = ({
                 className="form-input"
                 value={values.bank}
                 onChange={(e) => setField('bank', e.target.value)}
+                data-field="bank"
               >
                 <option value="cmb">招商银行</option>
                 <option value="icbc">工商银行</option>
@@ -158,6 +164,7 @@ export const DepositFormModal = ({
                 className="form-input"
                 value={values.product_name}
                 onChange={(e) => setField('product_name', e.target.value)}
+                data-field="product_name"
                 placeholder="请输入产品名称"
               />
               {errors.product_name && <div className="form-error">{errors.product_name}</div>}
@@ -182,6 +189,7 @@ export const DepositFormModal = ({
                 }}
                 onBlur={autoCalculate}
                 placeholder="0.00"
+                data-field="principal"
               />
               {errors.principal && <div className="form-error">{errors.principal}</div>}
             </div>
@@ -203,6 +211,7 @@ export const DepositFormModal = ({
                 }}
                 onBlur={autoCalculate}
                 placeholder="0.00"
+                data-field="annual_rate"
               />
               {errors.annual_rate && <div className="form-error">{errors.annual_rate}</div>}
             </div>
@@ -215,6 +224,7 @@ export const DepositFormModal = ({
                 className="form-input"
                 value={values.start_date}
                 onChange={(e) => setField('start_date', e.target.value)}
+                data-field="start_date"
                 onBlur={autoCalculate}
               />
               {errors.start_date && <div className="form-error">{errors.start_date}</div>}
@@ -226,6 +236,7 @@ export const DepositFormModal = ({
                 className="form-input"
                 value={values.maturity_date}
                 onChange={(e) => setField('maturity_date', e.target.value)}
+                data-field="maturity_date"
                 onBlur={autoCalculate}
               />
               {errors.maturity_date && <div className="form-error">{errors.maturity_date}</div>}
@@ -249,6 +260,7 @@ export const DepositFormModal = ({
                   }
                 }}
                 placeholder="0.00"
+                data-field="expected_return"
               />
             </div>
             <div className="form-group">
@@ -257,6 +269,7 @@ export const DepositFormModal = ({
                 className="form-input"
                 value={values.status}
                 onChange={(e) => setField('status', e.target.value)}
+                data-field="status"
               >
                 <option value="active">持有中</option>
                 <option value="matured">已到期</option>
@@ -271,6 +284,7 @@ export const DepositFormModal = ({
                 className="form-input"
                 value={values.notes ?? ''}
                 onChange={(e) => setField('notes', e.target.value || null)}
+                data-field="notes"
                 placeholder="可选"
               />
             </div>
