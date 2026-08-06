@@ -5,10 +5,19 @@
  * 父组件只需传 visible + editing + onCancel + onSubmit(values)。
  *
  * 打开时（visible false→true 或 editing.id 变化）会自动 reset 表单。
+ *
+ * 增强：
+ *   - 编辑模式下 code→name 联动禁用（保留原 editing 数据）
+ *   - 新增模式下输入 code（≥3 字符）会通过 /api/market/search 自动查名称填入
+ *     - 单向：code → name（不反向，避免循环）
+ *     - debounce 300ms 避免每键查
+ *     - 失败 / 找不到时静默
+ *     - 同一 code 只查一次（lastAutoFilledCode 去重）
  */
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Holding, HoldingCreate } from '../../../types'
 import { useForm } from '../../../hooks'
+import { searchStocks } from '../../../api/market'
 
 const INITIAL_HOLDING: HoldingCreate = {
   platform: 'alipay',
@@ -66,13 +75,43 @@ export const HoldingFormModal = ({
   onSubmit,
 }: HoldingFormModalProps) => {
   const form = useForm<HoldingCreate>(INITIAL_HOLDING)
+  const [lastAutoFilledCode, setLastAutoFilledCode] = useState('')
+  const reqIdRef = useRef(0)
 
   // 每次打开或切换编辑对象时重置表单
   useEffect(() => {
     if (visible) {
       form.reset(editing ? holdingFromEditing(editing) : INITIAL_HOLDING)
+      setLastAutoFilledCode(editing ? '' : '')
     }
   }, [visible, editing?.id, form.reset])
+
+  // code → name 自动联动（仅新增模式，debounce 300ms，失败静默）
+  useEffect(() => {
+    if (!visible) return
+    if (editing) return
+    const code = form.values.code.trim()
+    if (code.length < 3) return
+    if (code === lastAutoFilledCode) return
+
+    const myReq = ++reqIdRef.current
+    const handle = setTimeout(async () => {
+      try {
+        const res = await searchStocks(code)
+        // 防过期响应：如果用户已经又改了 code，丢弃本轮结果
+        if (myReq !== reqIdRef.current) return
+        const match = res.list.find((r) => r.code === code)
+        if (match && form.values.name.trim() === '') {
+          form.setField('name', match.name)
+        }
+        setLastAutoFilledCode(code)
+      } catch {
+        // 静默失败：market/search 依赖外部数据源，不阻断表单填写
+        setLastAutoFilledCode(code)
+      }
+    }, 300)
+    return () => clearTimeout(handle)
+  }, [visible, editing, form.values.code, form.values.name, lastAutoFilledCode, form.setField])
 
   if (!visible) return null
 
