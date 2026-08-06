@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import ReactECharts from 'echarts-for-react'
+import { TableSkeleton } from '../components/TableSkeleton'
 import { getMarketSentiment } from '../api/sentiment'
 import type { MarketSentimentOverview } from '../types'
 import { getProfitColor, formatLargeNumber } from '../utils/format'
@@ -404,9 +405,8 @@ const MarketSentiment = () => {
       </div>
 
       {loading && !data && (
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <span>加载中...</span>
+        <div className="sentiment-skeleton">
+          <TableSkeleton rows={5} columns={3} />
         </div>
       )}
 
