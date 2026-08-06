@@ -63,6 +63,8 @@ const validate = (form: HoldingCreate): Partial<Record<keyof HoldingCreate, stri
 export interface HoldingFormModalProps {
   visible: boolean
   editing: Holding | null
+  /** 父组件正在提交（用于按钮 disable + loading 文案） */
+  submitting?: boolean
   onCancel: () => void
   /** 通过校验后回调，父组件只负责调 API */
   onSubmit: (values: HoldingCreate) => void
@@ -71,6 +73,7 @@ export interface HoldingFormModalProps {
 export const HoldingFormModal = ({
   visible,
   editing,
+  submitting = false,
   onCancel,
   onSubmit,
 }: HoldingFormModalProps) => {
@@ -283,8 +286,8 @@ export const HoldingFormModal = ({
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onCancel}>取消</button>
-          <button className="btn btn-primary" onClick={handleSubmit}>
-            {editing ? '保存' : '创建'}
+          <button className="btn btn-primary" onClick={handleSubmit} disabled={submitting}>
+            {submitting ? (editing ? '保存中...' : '创建中...') : (editing ? '保存' : '创建')}
           </button>
         </div>
       </div>

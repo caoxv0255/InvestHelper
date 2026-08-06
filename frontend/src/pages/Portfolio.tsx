@@ -73,6 +73,8 @@ const Portfolio = () => {
     stop_loss_price: '',
   })
   const [tpSlLoading, setTpSlLoading] = useState(false)
+  // ===== 持仓表单 submitting state（驱动 modal 按钮 disable + loading 文案） =====
+  const [holdingSubmitting, setHoldingSubmitting] = useState(false)
 
   // ===== Action ownership (Phase 2B: 接入 usePortfolioActions) =====
   const actions = usePortfolioActions({
@@ -85,8 +87,15 @@ const Portfolio = () => {
 
   // thin wrappers — 保持 JSX 现有 onSubmit/onConfirm 签名 1:1，
   // 让 hook 不读 page-owned modal state
-  const submitHoldingForm = (values: HoldingCreate) =>
-    void actions.submitHoldingForm(values, holdingModal.data)
+  const submitHoldingForm = async (values: HoldingCreate) => {
+    if (holdingSubmitting) return
+    setHoldingSubmitting(true)
+    try {
+      await actions.submitHoldingForm(values, holdingModal.data)
+    } finally {
+      setHoldingSubmitting(false)
+    }
+  }
   const submitDepositForm = (values: DepositCreate) =>
     void actions.submitDepositForm(values, depositModal.data)
   const confirmDelete = () => void actions.confirmDelete(deleteModal.data)
@@ -235,6 +244,7 @@ const Portfolio = () => {
       <HoldingFormModal
         visible={holdingModal.visible}
         editing={holdingModal.data}
+        submitting={holdingSubmitting}
         onCancel={holdingModal.close}
         onSubmit={submitHoldingForm}
       />
