@@ -3,6 +3,7 @@
  */
 import type { Deposit } from '../../../types'
 import { formatCurrency, formatDate } from '../../../utils/format'
+import { TableSkeleton } from '../../../components/TableSkeleton'
 
 /**
  * toNum — fence post against backend returning decimal strings for Numeric columns.
@@ -80,12 +81,9 @@ export const DepositTable = ({
         </button>
       </div>
 
-      {/* 加载状态 */}
+      {/* 加载状态 — skeleton placeholder (9 columns x 3 rows) */}
       {depositsLoading && (
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <span>加载中...</span>
-        </div>
+        <TableSkeleton rows={3} columns={9} />
       )}
 
       {/* 错误提示 */}
