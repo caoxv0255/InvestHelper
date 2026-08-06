@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { getKline, searchStocks } from '../api/market'
 import KLineChartView from '../components/KLineChartView'
 import { calculateMA, calculateMACD, calculateKDJ, calculateVolume } from '../utils/indicators'
+import { useDebounce } from '../hooks'
 import { formatCurrency, formatNumber } from '../utils/format'
 import type { KLineData, IndicatorData, Period, StockSearchResult } from '../types'
 import '../styles/KLineChart.css'
@@ -36,7 +37,6 @@ const KLineChart = () => {
   // 搜索结果
   const [searchResults, setSearchResults] = useState<StockSearchResult[]>([])
   const [showResults, setShowResults] = useState(false)
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   // 指标可见性
@@ -95,32 +95,34 @@ const KLineChart = () => {
     loadKline()
   }, [loadKline])
 
-  /**
-   * 搜索股票（带防抖）
-   */
-  const handleSearchChange = (value: string) => {
-    setKeyword(value)
-    if (searchTimerRef.current) {
-      clearTimeout(searchTimerRef.current)
-    }
-    if (!value.trim()) {
+  // 搜索 input：useDebounce 把快速输入稳定为 300ms 间隔
+  const debouncedKeyword = useDebounce(keyword, 300)
+
+  useEffect(() => {
+    if (!debouncedKeyword.trim()) {
       setSearchResults([])
       setShowResults(false)
       return
     }
-    searchTimerRef.current = setTimeout(async () => {
+    let cancelled = false
+    ;(async () => {
       try {
-        const res = await searchStocks(value.trim())
+        const res = await searchStocks(debouncedKeyword.trim())
+        if (cancelled) return
         const list = res?.list ?? []
         setSearchResults(Array.isArray(list) ? list : [])
         setShowResults(true)
       } catch (err) {
+        if (cancelled) return
         setError(err instanceof Error ? err.message : '搜索失败，请稍后重试')
         setSearchResults([])
         setShowResults(false)
       }
-    }, 300)
-  }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [debouncedKeyword])
 
   /**
    * 选中搜索结果
@@ -164,7 +166,7 @@ const KLineChart = () => {
             className="kline-search-input"
             placeholder="输入股票/基金代码或名称"
             value={keyword}
-            onChange={(e) => handleSearchChange(e.target.value)}
+            onChange={(e) => setKeyword(e.target.value)}
             onFocus={() => keyword.trim() && searchResults.length > 0 && setShowResults(true)}
           />
           {showResults && searchResults.length > 0 && (
