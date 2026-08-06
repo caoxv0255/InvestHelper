@@ -14,6 +14,7 @@ import type { NewsSource } from '../types'
 import { useAsyncResource, useModal } from '../hooks'
 import { useNewsFeed } from '../features/news/hooks/useNewsFeed'
 import { KeywordConfigModal } from '../features/news/components/KeywordConfigModal'
+import { TableSkeleton } from '../components/TableSkeleton'
 import '../styles/News.css'
 
 // 来源字段值 -> 中文展示名
@@ -259,9 +260,21 @@ const News = () => {
       )}
 
       {feed.loading ? (
-        <div className="loading-container">
-          <div className="loading-spinner" />
-          <div>加载快讯中...</div>
+        // 卡片骨架：模拟真实 card 形状（header + title + content + meta）
+        <div className="news-list">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="news-card news-card-skeleton">
+              <div className="news-card-header">
+                <TableSkeleton rows={1} columns={3} />
+              </div>
+              <div className="news-card-title">
+                <TableSkeleton rows={1} columns={1} />
+              </div>
+              <div className="news-card-content">
+                <TableSkeleton rows={2} columns={1} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : displayedItems.length === 0 ? (
         <div className="news-empty">
