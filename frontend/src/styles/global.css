@@ -16,3 +16,36 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* Toast 通知 */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast-item {
+  min-width: 240px;
+  max-width: 360px;
+  padding: 12px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  pointer-events: auto;
+  animation: toast-in 0.2s ease-out;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.toast-success { background: #f0f9eb; color: #2c7a2c; border-left: 3px solid #4caf50; }
+.toast-error { background: #fef0f0; color: #b43a3a; border-left: 3px solid #f44336; }
+.toast-info { background: #e6f4ff; color: #1e6cb6; border-left: 3px solid #2196f3; }
+.toast-warning { background: #fff7e6; color: #b07b1b; border-left: 3px solid #ff9800; }
