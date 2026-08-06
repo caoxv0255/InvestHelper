@@ -107,6 +107,19 @@ export const DepositFormModal = ({
     onSubmit(values)
   }
 
+  // Enter 提交，Esc 取消（input 元素触发；submitting 时禁用）
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      if (!submitting) onCancel()
+    } else if (e.key === 'Enter' && e.target instanceof HTMLElement) {
+      if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return
+      if (e.target instanceof HTMLInputElement && e.target.type === 'button') return
+      e.preventDefault()
+      handleSubmit()
+    }
+  }
+
   const autoCalculate = () => {
     const v = calcExpectedReturn(values)
     if (v !== null) {
@@ -116,7 +129,7 @@ export const DepositFormModal = ({
 
   return (
     <div className="modal-overlay" onClick={handleOverlayClick}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <form className="modal-content" onKeyDown={handleKeyDown} onSubmit={(e) => { e.preventDefault(); handleSubmit() }}>
         <div className="modal-header">
           <h3>{editing ? '编辑定期理财' : '添加定期理财'}</h3>
           <button className="modal-close" onClick={onCancel}>×</button>
@@ -269,7 +282,7 @@ export const DepositFormModal = ({
             {submitting ? (editing ? '保存中...' : '创建中...') : (editing ? '保存' : '创建')}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   )
 }
