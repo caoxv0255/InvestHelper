@@ -16,7 +16,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import type { Holding, HoldingCreate } from '../../../types'
-import { useForm, focusFirstError } from '../../../hooks'
+import { useForm, focusFirstError, useAutoFocus } from '../../../hooks'
 import { searchStocks } from '../../../api/market'
 
 const INITIAL_HOLDING: HoldingCreate = {
@@ -86,15 +86,11 @@ export const HoldingFormModal = ({
     if (visible) {
       form.reset(editing ? holdingFromEditing(editing) : INITIAL_HOLDING)
       setLastAutoFilledCode(editing ? '' : '')
-      // auto-focus 第一个 input（让用户立刻开始输入）
-      requestAnimationFrame(() => {
-        const firstInput = document.querySelector<HTMLInputElement>(
-          '.modal-content input:not([type=button]), .modal-content select, .modal-content textarea',
-        )
-        firstInput?.focus()
-      })
     }
   }, [visible, editing?.id, form.reset])
+
+  // modal 打开时 auto-focus 第一个可编辑元素
+  useAutoFocus(visible)
 
   // code → name 自动联动（仅新增模式，debounce 300ms，失败静默）
   useEffect(() => {

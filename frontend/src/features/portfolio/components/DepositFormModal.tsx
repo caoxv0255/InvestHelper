@@ -6,7 +6,7 @@
  */
 import { useEffect } from 'react'
 import type { Deposit, DepositCreate } from '../../../types'
-import { useForm, focusFirstError } from '../../../hooks'
+import { useForm, focusFirstError, useAutoFocus } from '../../../hooks'
 
 const initialDeposit = (today: string): DepositCreate => ({
   bank: 'cmb',
@@ -85,15 +85,11 @@ export const DepositFormModal = ({
   useEffect(() => {
     if (visible) {
       form.reset(editing ? depositFromEditing(editing) : initialDeposit(todayIso()))
-      // auto-focus 第一个 input
-      requestAnimationFrame(() => {
-        const firstInput = document.querySelector<HTMLInputElement>(
-          '.modal-content input:not([type=button]), .modal-content select, .modal-content textarea',
-        )
-        firstInput?.focus()
-      })
     }
   }, [visible, editing?.id, form.reset])
+
+  // modal 打开时 auto-focus 第一个可编辑元素
+  useAutoFocus(visible)
 
   if (!visible) return null
 
