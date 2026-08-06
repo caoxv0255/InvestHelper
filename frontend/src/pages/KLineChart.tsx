@@ -202,6 +202,7 @@ const KLineChart = () => {
             key={item.value}
             className={`kline-period-btn ${period === item.value ? 'active' : ''}`}
             onClick={() => setPeriod(item.value)}
+            disabled={loading}
           >
             {item.label}
           </button>
@@ -220,6 +221,7 @@ const KLineChart = () => {
             key={item.key}
             className={`kline-indicator-btn ${visible[item.key as keyof typeof visible] ? 'active' : ''}`}
             onClick={() => toggleIndicator(item.key as keyof typeof visible)}
+            disabled={loading}
           >
             {item.label}
           </button>
@@ -231,8 +233,8 @@ const KLineChart = () => {
       {error && (
         <div className="kline-status kline-error">
           <span>{error}</span>
-          <button className="kline-retry-btn" onClick={loadKline}>
-            重试
+          <button className="kline-retry-btn" onClick={loadKline} disabled={loading}>
+            {loading ? '加载中...' : '重试'}
           </button>
         </div>
       )}
