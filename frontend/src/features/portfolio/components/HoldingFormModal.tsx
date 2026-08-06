@@ -151,22 +151,40 @@ export const HoldingFormModal = ({
             <div className="form-group">
               <label className="form-label">持仓数量 <span className="required">*</span></label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 className="form-input"
-                value={values.quantity}
-                onChange={(e) => setField('quantity', parseFloat(e.target.value) || 0)}
+                value={values.quantity === 0 ? '' : String(values.quantity)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === '' || v === '.') {
+                    setField('quantity', 0)
+                  } else {
+                    const n = parseFloat(v)
+                    setField('quantity', Number.isFinite(n) ? n : 0)
+                  }
+                }}
+                placeholder="0.00"
               />
               {errors.quantity && <div className="form-error">{errors.quantity}</div>}
             </div>
             <div className="form-group">
               <label className="form-label">成本价 <span className="required">*</span></label>
               <input
-                type="number"
-                step="0.0001"
+                type="text"
+                inputMode="decimal"
                 className="form-input"
-                value={values.cost_price}
-                onChange={(e) => setField('cost_price', parseFloat(e.target.value) || 0)}
+                value={values.cost_price === 0 ? '' : String(values.cost_price)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === '' || v === '.') {
+                    setField('cost_price', 0)
+                  } else {
+                    const n = parseFloat(v)
+                    setField('cost_price', Number.isFinite(n) ? n : 0)
+                  }
+                }}
+                placeholder="0.0000"
               />
               {errors.cost_price && <div className="form-error">{errors.cost_price}</div>}
             </div>
@@ -175,13 +193,19 @@ export const HoldingFormModal = ({
             <div className="form-group">
               <label className="form-label">当前价</label>
               <input
-                type="number"
-                step="0.0001"
+                type="text"
+                inputMode="decimal"
                 className="form-input"
-                value={values.current_price ?? ''}
-                onChange={(e) =>
-                  setField('current_price', e.target.value ? parseFloat(e.target.value) : null)
-                }
+                value={values.current_price == null ? '' : String(values.current_price)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === '' || v === '.') {
+                    setField('current_price', null)
+                  } else {
+                    const n = parseFloat(v)
+                    setField('current_price', Number.isFinite(n) ? n : null)
+                  }
+                }}
                 placeholder="可选"
               />
             </div>
