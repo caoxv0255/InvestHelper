@@ -42,19 +42,32 @@ export interface HoldingTableProps {
 
 // ----- 内部纯函数（不依赖 React state）-----
 
+/**
+ * toNum — 把后端 Numeric/Decimal 字段安全转成 number
+ *
+ * 后端 SQLAlchemy + Pydantic 把 Numeric 列序列化成 JSON string（如 "1500.000000"），
+ * 而前端 TypeScript 类型仍声明 number。运行时如果直接 toFixed() / 算术运算就会崩。
+ * 这里在消费侧做一次 coerce，是 fence post 修复，不动后端契约。
+ */
+const toNum = (v: number | string | null | undefined): number => {
+  if (v === null || v === undefined || v === '') return 0
+  if (typeof v === 'string') return parseFloat(v)
+  return v
+}
+
 function calculateProfit(holding: Holding): number {
   if (!holding.current_price) return 0
-  return (holding.current_price - holding.cost_price) * holding.quantity
+  return (toNum(holding.current_price) - toNum(holding.cost_price)) * toNum(holding.quantity)
 }
 
 function calculateProfitPercent(holding: Holding): number {
   if (!holding.current_price || holding.cost_price === 0) return 0
-  return ((holding.current_price - holding.cost_price) / holding.cost_price) * 100
+  return ((toNum(holding.current_price) - toNum(holding.cost_price)) / toNum(holding.cost_price)) * 100
 }
 
 function calculateMarketValue(holding: Holding): number {
-  if (!holding.current_price) return holding.cost_price * holding.quantity
-  return holding.current_price * holding.quantity
+  if (!holding.current_price) return toNum(holding.cost_price) * toNum(holding.quantity)
+  return toNum(holding.current_price) * toNum(holding.quantity)
 }
 
 function getPlatformLabel(platform: string): { text: string; className: string } {
@@ -221,10 +234,10 @@ export const HoldingTable = ({
                       <td>{getAssetTypeLabel(holding.asset_type)}</td>
                       <td className="code-cell">{holding.code}</td>
                       <td className="name-cell">{holding.name}</td>
-                      <td className="text-right">{holding.quantity.toFixed(2)}</td>
-                      <td className="text-right">{holding.cost_price.toFixed(4)}</td>
+                      <td className="text-right">{toNum(holding.quantity).toFixed(2)}</td>
+                      <td className="text-right">{toNum(holding.cost_price).toFixed(4)}</td>
                       <td className="text-right">
-                        {holding.current_price ? holding.current_price.toFixed(4) : '-'}
+                        {holding.current_price ? toNum(holding.current_price).toFixed(4) : '-'}
                       </td>
                       <td className="text-right">{formatCurrency(marketValue)}</td>
                       <td className={`text-right ${isPositive ? 'profit-positive' : 'profit-negative'}`}>
