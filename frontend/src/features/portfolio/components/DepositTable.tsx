@@ -4,6 +4,20 @@
 import type { Deposit } from '../../../types'
 import { formatCurrency, formatDate } from '../../../utils/format'
 
+/**
+ * toNum — fence post against backend returning decimal strings for Numeric columns.
+ *
+ * 与 HoldingTable 的 toNum 含义一致：后端 SQLAlchemy + Pydantic 把 Numeric 序列化成
+ * JSON string（如 "0.0210"），前端 TypeScript 仍声明 number。运行时直接调
+ * toFixed / toLocaleString 就会崩。这里在消费侧做一次 coerce，不动后端契约。
+ */
+const toNum = (value: unknown): number => {
+  if (value === null || value === undefined || value === '') return 0
+  if (typeof value === 'number') return value
+  const n = parseFloat(String(value))
+  return Number.isFinite(n) ? n : 0
+}
+
 export interface DepositTableProps {
   deposits: Deposit[]
   depositsLoading: boolean
@@ -120,12 +134,12 @@ export const DepositTable = ({
                   return (
                     <tr key={deposit.id} className={rowClassName}>
                       <td className="name-cell">{deposit.product_name}</td>
-                      <td className="text-right">{formatCurrency(deposit.principal)}</td>
-                      <td className="text-right">{deposit.annual_rate.toFixed(2)}%</td>
+                      <td className="text-right">{formatCurrency(toNum(deposit.principal))}</td>
+                      <td className="text-right">{toNum(deposit.annual_rate).toFixed(2)}%</td>
                       <td>{formatDate(deposit.start_date)}</td>
                       <td>{formatDate(deposit.maturity_date)}</td>
                       <td className="text-right profit-positive">
-                        +{formatCurrency(deposit.expected_return)}
+                        +{formatCurrency(toNum(deposit.expected_return))}
                       </td>
                       <td>
                         <span className={statusInfo.className}>
