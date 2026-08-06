@@ -1,13 +1,19 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+/**
+ * 市场快讯页面
+ *
+ * 重构后：useNewsFeed 封装分页+auto-refresh；KeywordConfigModal 封装弹窗状态；
+ * useAsyncResource 封装 sources/keywords 加载；useModal 替换 modal open 状态。
+ *
+ * 仍留在本页的：filter 输入（source/keywordInput/activeKeyword/onlyImportant）、
+ * 展开的卡片 id 集合、IntersectionObserver 哨兵。
+ */
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import {
-  getNews,
-  refreshNews,
-  getNewsSources,
-  getNewsKeywords,
-  updateNewsKeywords,
-} from '../api/news'
-import type { NewsItem, NewsSource } from '../types'
+import { getNewsSources, getNewsKeywords } from '../api/news'
+import type { NewsSource } from '../types'
+import { useAsyncResource, useModal } from '../hooks'
+import { useNewsFeed } from '../features/news/hooks/useNewsFeed'
+import { KeywordConfigModal } from '../features/news/components/KeywordConfigModal'
 import '../styles/News.css'
 
 // 来源字段值 -> 中文展示名
@@ -23,11 +29,6 @@ const DEFAULT_SOURCE_OPTIONS: { id: string; name: string }[] = [
   { id: 'ths', name: '同花顺' },
   { id: 'sina', name: '新浪财经' },
 ]
-
-// 自动刷新间隔（毫秒）
-const AUTO_REFRESH_INTERVAL = 60 * 1000
-// 单页加载条数
-const PAGE_SIZE = 30
 
 /**
  * 将文本按关键词高亮渲染（大小写不敏感）
@@ -84,135 +85,57 @@ const formatTime = (iso: string): string => {
 }
 
 const News = () => {
-  // ===== 列表数据 =====
-  const [newsItems, setNewsItems] = useState<NewsItem[]>([])
-  const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  // ===== 筛选条件 =====
+  // ===== 筛选条件（页面 UI 输入） =====
   const [sourceFilter, setSourceFilter] = useState<string>('')
   const [keywordInput, setKeywordInput] = useState('')
   // 实际生效的搜索关键词（点击搜索或回车后写入）
   const [activeKeyword, setActiveKeyword] = useState('')
   const [onlyImportant, setOnlyImportant] = useState(false)
 
-  // ===== 分页 =====
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-
-  // ===== 来源列表 =====
-  const [sources, setSources] = useState<NewsSource[]>(DEFAULT_SOURCE_OPTIONS)
-
-  // ===== 关键词配置 =====
-  const [configuredKeywords, setConfiguredKeywords] = useState<string[]>([])
-  const [keywordModalOpen, setKeywordModalOpen] = useState(false)
-  const [newKeyword, setNewKeyword] = useState('')
-  const [modalKeywords, setModalKeywords] = useState<string[]>([])
-  const [savingKeywords, setSavingKeywords] = useState(false)
-  const [modalError, setModalError] = useState<string | null>(null)
-
   // ===== 展开的快讯 id 集合 =====
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
 
+  // ===== Sources & Configured Keywords =====
+  // sources：API 返回非空才覆盖默认值
+  const sources = useAsyncResource<NewsSource[]>(
+    async () => {
+      try {
+        const res = await getNewsSources()
+        if (Array.isArray(res) && res.length > 0) return res
+      } catch {
+        /* 静默失败，沿用默认 */
+      }
+      return DEFAULT_SOURCE_OPTIONS
+    },
+    [],
+    { initialData: DEFAULT_SOURCE_OPTIONS },
+  )
+
+  const configuredKeywords = useAsyncResource<string[]>(
+    async () => {
+      try {
+        const res = await getNewsKeywords()
+        if (res?.keywords) return res.keywords
+      } catch {
+        /* 静默失败 */
+      }
+      return []
+    },
+    [],
+    { initialData: [] as string[] },
+  )
+
+  // ===== 快讯列表（封装分页 + 自动刷新 + 手动刷新） =====
+  const feed = useNewsFeed(
+    { source: sourceFilter, keyword: activeKeyword },
+    { pageSize: 30, autoRefreshMs: 60_000 },
+  )
+
+  // ===== 关键词配置 modal =====
+  const keywordModal = useModal<void>()
+
   // 触底加载的哨兵 ref
   const sentinelRef = useRef<HTMLDivElement | null>(null)
-
-  // 合并来源（接口返回优先，兜底默认）
-  useEffect(() => {
-    let mounted = true
-    getNewsSources()
-      .then((res) => {
-        if (!mounted) return
-        if (Array.isArray(res) && res.length > 0) setSources(res)
-      })
-      .catch(() => {
-        // 静默失败，沿用默认来源
-      })
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  // 拉取关键词配置
-  useEffect(() => {
-    let mounted = true
-    getNewsKeywords()
-      .then((res) => {
-        if (!mounted) return
-        if (res?.keywords) setConfiguredKeywords(res.keywords)
-      })
-      .catch(() => {
-        // 静默失败
-      })
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  // 首次拉取快讯列表
-  const fetchFirstPage = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await getNews(PAGE_SIZE, sourceFilter || undefined, activeKeyword || undefined)
-      const items = res?.items ?? []
-      setNewsItems(items)
-      setTotal(res?.total ?? items.length)
-      setPage(1)
-      setHasMore(items.length < (res?.total ?? items.length))
-    } catch (err: any) {
-      setError(err?.message || '加载快讯失败')
-      setNewsItems([])
-      setHasMore(false)
-    } finally {
-      setLoading(false)
-    }
-  }, [sourceFilter, activeKeyword])
-
-  // 加载更多
-  const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return
-    setLoadingMore(true)
-    try {
-      const nextPage = page + 1
-      const limit = PAGE_SIZE * nextPage
-      const res = await getNews(limit, sourceFilter || undefined, activeKeyword || undefined)
-      const items = res?.items ?? []
-      setNewsItems(items)
-      setTotal(res?.total ?? items.length)
-      setPage(nextPage)
-      setHasMore(items.length < (res?.total ?? items.length))
-    } catch (err: any) {
-      setError(err?.message || '加载更多失败')
-    } finally {
-      setLoadingMore(false)
-    }
-  }, [page, hasMore, loadingMore, sourceFilter, activeKeyword])
-
-  // 初始 + 筛选条件变化时拉取
-  useEffect(() => {
-    fetchFirstPage()
-  }, [fetchFirstPage])
-
-  // 自动刷新：每 60s 静默拉取首页（不触发 loading 闪屏）
-  useEffect(() => {
-    const timer = setInterval(() => {
-      getNews(PAGE_SIZE, sourceFilter || undefined, activeKeyword || undefined)
-        .then((res) => {
-          const items = res?.items ?? []
-          setNewsItems(items)
-          setTotal(res?.total ?? items.length)
-          setHasMore(items.length < (res?.total ?? items.length))
-        })
-        .catch(() => {
-          // 静默失败，不打扰用户
-        })
-    }, AUTO_REFRESH_INTERVAL)
-    return () => clearInterval(timer)
-  }, [sourceFilter, activeKeyword])
 
   // 触底加载：IntersectionObserver
   useEffect(() => {
@@ -221,28 +144,14 @@ const News = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          loadMore()
+          void feed.loadMore()
         }
       },
       { rootMargin: '200px' },
     )
     observer.observe(node)
     return () => observer.disconnect()
-  }, [loadMore])
-
-  // 手动刷新（触发后端抓取 + 重新拉取首页）
-  const handleManualRefresh = async () => {
-    setRefreshing(true)
-    setError(null)
-    try {
-      await refreshNews()
-      await fetchFirstPage()
-    } catch (err: any) {
-      setError(err?.message || '触发抓取失败')
-    } finally {
-      setRefreshing(false)
-    }
-  }
+  }, [feed.loadMore])
 
   // 关键词搜索：回车触发
   const handleKeywordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -261,67 +170,19 @@ const News = () => {
     })
   }
 
-  // 打开关键词设置弹窗
-  const openKeywordModal = () => {
-    setModalKeywords([...configuredKeywords])
-    setNewKeyword('')
-    setModalError(null)
-    setKeywordModalOpen(true)
-  }
-
-  // 弹窗中回车添加关键词
-  const handleModalKeywordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      addModalKeyword()
-    }
-  }
-
-  // 添加关键词
-  const addModalKeyword = () => {
-    const kw = newKeyword.trim()
-    if (!kw) return
-    if (modalKeywords.includes(kw)) {
-      setNewKeyword('')
-      return
-    }
-    setModalKeywords([...modalKeywords, kw])
-    setNewKeyword('')
-  }
-
-  // 删除关键词
-  const removeModalKeyword = (kw: string) => {
-    setModalKeywords(modalKeywords.filter((k) => k !== kw))
-  }
-
-  // 保存关键词配置
-  const handleSaveKeywords = async () => {
-    setSavingKeywords(true)
-    setModalError(null)
-    try {
-      const res = await updateNewsKeywords(modalKeywords)
-      setConfiguredKeywords(res?.keywords ?? modalKeywords)
-      setKeywordModalOpen(false)
-    } catch (err: any) {
-      setModalError(err?.message || '保存关键词失败')
-    } finally {
-      setSavingKeywords(false)
-    }
-  }
-
   // 用于高亮的关键词集合：配置关键词 + 搜索关键词
   const highlightKeywords = useMemo(() => {
-    const set = new Set<string>(configuredKeywords)
+    const set = new Set<string>(configuredKeywords.data ?? [])
     if (activeKeyword) set.add(activeKeyword)
     return Array.from(set)
-  }, [configuredKeywords, activeKeyword])
+  }, [configuredKeywords.data, activeKeyword])
 
   // 经过"仅看重磅"过滤后的列表（前端再过滤一层以保证视觉效果）
   const displayedItems = useMemo(() => {
     // 后端返回已按时间倒序，这里仅做重磅过滤
-    if (!onlyImportant) return newsItems
-    return newsItems.filter((n) => n.is_important)
-  }, [newsItems, onlyImportant])
+    if (!onlyImportant) return feed.items
+    return feed.items.filter((n) => n.is_important)
+  }, [feed.items, onlyImportant])
 
   return (
     <div className="page-container news-page">
@@ -337,7 +198,7 @@ const News = () => {
             onChange={(e) => setSourceFilter(e.target.value)}
           >
             <option value="">全部</option>
-            {sources.map((s) => (
+            {(sources.data ?? DEFAULT_SOURCE_OPTIONS).map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
@@ -377,27 +238,27 @@ const News = () => {
 
         <button
           className="btn btn-secondary"
-          onClick={handleManualRefresh}
-          disabled={refreshing}
+          onClick={() => void feed.refresh()}
+          disabled={feed.refreshing}
         >
-          {refreshing ? '抓取中...' : '刷新'}
+          {feed.refreshing ? '抓取中...' : '刷新'}
         </button>
-        <button className="btn btn-primary" onClick={openKeywordModal}>
+        <button className="btn btn-primary" onClick={() => keywordModal.open()}>
           关键词设置
         </button>
       </div>
 
       {/* 状态展示区 */}
-      {error && (
+      {feed.error && (
         <div className="error-message">
-          <span>{error}</span>
-          <button className="btn-link" onClick={fetchFirstPage}>
+          <span>{feed.error}</span>
+          <button className="btn-link" onClick={() => void feed.refresh()}>
             重试
           </button>
         </div>
       )}
 
-      {loading ? (
+      {feed.loading ? (
         <div className="loading-container">
           <div className="loading-spinner" />
           <div>加载快讯中...</div>
@@ -411,7 +272,7 @@ const News = () => {
       ) : (
         <>
           <div className="news-meta">
-            共 {total} 条{activeKeyword ? ` · 关键词：${activeKeyword}` : ''}
+            共 {feed.total} 条{activeKeyword ? ` · 关键词：${activeKeyword}` : ''}
             {sourceFilter ? ` · 来源：${SOURCE_NAME_MAP[sourceFilter] || sourceFilter}` : ''}
           </div>
 
@@ -485,100 +346,21 @@ const News = () => {
 
           {/* 触底加载哨兵 */}
           <div ref={sentinelRef} className="news-sentinel">
-            {loadingMore && <div className="news-loading-more">加载更多中...</div>}
-            {!hasMore && displayedItems.length > 0 && (
+            {feed.loadingMore && <div className="news-loading-more">加载更多中...</div>}
+            {!feed.hasMore && displayedItems.length > 0 && (
               <div className="news-no-more">— 已加载全部 —</div>
             )}
           </div>
         </>
       )}
 
-      {/* 关键词设置弹窗 */}
-      {keywordModalOpen && (
-        <div className="modal-overlay" onClick={() => setKeywordModalOpen(false)}>
-          <div
-            className="modal-content modal-small"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <h3>关键词设置</h3>
-              <button
-                className="modal-close"
-                onClick={() => setKeywordModalOpen(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              {modalError && (
-                <div className="error-message" style={{ marginBottom: '1rem' }}>
-                  {modalError}
-                </div>
-              )}
-              <div className="form-group-full">
-                <label className="form-label">添加关键词</label>
-                <div className="news-keyword-input-row">
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="输入关键词后回车添加"
-                    value={newKeyword}
-                    onChange={(e) => setNewKeyword(e.target.value)}
-                    onKeyDown={handleModalKeywordKeyDown}
-                  />
-                  <button className="btn btn-primary" onClick={addModalKeyword}>
-                    添加
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-group-full" style={{ marginTop: '1rem' }}>
-                <label className="form-label">
-                  已配置关键词（{modalKeywords.length}）
-                </label>
-                {modalKeywords.length === 0 ? (
-                  <div className="text-muted">暂未配置任何关键词</div>
-                ) : (
-                  <div className="news-keyword-tag-list">
-                    {modalKeywords.map((kw) => (
-                      <span key={kw} className="news-keyword-tag removable">
-                        {kw}
-                        <button
-                          className="news-keyword-remove"
-                          onClick={() => removeModalKeyword(kw)}
-                          title="删除"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="text-muted" style={{ marginTop: '0.75rem', fontSize: '0.8rem' }}>
-                配置的关键词将用于快讯内容高亮展示，不影响后端抓取逻辑。
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button
-                className="btn btn-secondary"
-                onClick={() => setKeywordModalOpen(false)}
-                disabled={savingKeywords}
-              >
-                取消
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleSaveKeywords}
-                disabled={savingKeywords}
-              >
-                {savingKeywords ? '保存中...' : '保存'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 关键词设置弹窗（自管状态） */}
+      <KeywordConfigModal
+        visible={keywordModal.visible}
+        initialKeywords={configuredKeywords.data ?? []}
+        onClose={keywordModal.close}
+        onSaved={(next) => configuredKeywords.setData(next)}
+      />
     </div>
   )
 }
