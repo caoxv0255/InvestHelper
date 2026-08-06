@@ -49,6 +49,9 @@ export interface UsePortfolioActionsParams {
   closeHoldingModal: () => void
   closeDepositModal: () => void
   closeDeleteModal: () => void
+
+  // 错误回调（page 端可挂 toast/alert 等任意通知方式）
+  onError?: (msg: string) => void
 }
 
 export interface PortfolioActions {
@@ -72,7 +75,12 @@ export function usePortfolioActions(
     closeHoldingModal,
     closeDepositModal,
     closeDeleteModal,
+    onError,
   } = params
+  const reportError = (msg: string) => {
+    if (onError) onError(msg)
+    else alert(msg)
+  }
 
   const submitHoldingForm = async (
     values: HoldingCreate,
@@ -87,7 +95,7 @@ export function usePortfolioActions(
       closeHoldingModal()
       void refetchHoldings()
     } catch (err: any) {
-      alert(err.message || '保存失败')
+      reportError(err.message || '保存失败')
     }
   }
 
@@ -104,7 +112,7 @@ export function usePortfolioActions(
       closeDepositModal()
       void refetchDeposits()
     } catch (err: any) {
-      alert(err.message || '保存失败')
+      reportError(err.message || '保存失败')
     }
   }
 
@@ -120,7 +128,7 @@ export function usePortfolioActions(
       }
       closeDeleteModal()
     } catch (err: any) {
-      alert(err.message || '删除失败')
+      reportError(err.message || '删除失败')
     }
   }
 

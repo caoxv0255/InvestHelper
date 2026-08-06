@@ -23,6 +23,7 @@ import type {
   TechnicalSignal,
   TakeProfitStopLossResult,
 } from '../types'
+import { useToast } from '../components/Toast'
 import { useModal } from '../hooks'
 import { usePortfolioData } from '../features/portfolio/hooks/usePortfolioData'
 import { usePortfolioActions } from '../features/portfolio/hooks/usePortfolioActions'
@@ -80,6 +81,7 @@ const Portfolio = () => {
   // ===== 删除确认 submitting state =====
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
 
+  const toast = useToast()
   // ===== Action ownership (Phase 2B: 接入 usePortfolioActions) =====
   const actions = usePortfolioActions({
     refetchHoldings: holdings.refetch,
@@ -87,6 +89,7 @@ const Portfolio = () => {
     closeHoldingModal: holdingModal.close,
     closeDepositModal: depositModal.close,
     closeDeleteModal: deleteModal.close,
+    onError: (msg) => toast.show(msg, 'error'),
   })
 
   // thin wrappers — 保持 JSX 现有 onSubmit/onConfirm 签名 1:1，
@@ -147,7 +150,7 @@ const Portfolio = () => {
         stop_loss_price: result.stop_loss_price?.toString() ?? '',
       })
     } catch (err: any) {
-      alert(err.message || '自动计算失败')
+      toast.show(err.message || '自动计算失败', 'error')
     } finally {
       setTpSlLoading(false)
     }
@@ -176,7 +179,7 @@ const Portfolio = () => {
       void holdings.refetch()
       void positionAlerts.refetch()
     } catch (err: any) {
-      alert(err.message || '保存失败')
+      toast.show(err.message || '保存失败', 'error')
     } finally {
       setTpSlLoading(false)
     }
