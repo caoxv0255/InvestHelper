@@ -130,6 +130,12 @@ export const HoldingFormModal = ({
     const newErrors = validate(values)
     if (Object.keys(newErrors).length > 0) {
       form.setErrors(newErrors)
+      // focus 到第一个错误字段（增强 UX：用户立刻知道哪里要改）
+      const firstError = Object.keys(newErrors)[0]
+      const el = document.querySelector<HTMLElement>(
+        `[data-field="${firstError}"]`,
+      )
+      el?.focus()
       return
     }
     onSubmit(values)
@@ -163,6 +169,7 @@ export const HoldingFormModal = ({
               <label className="form-label">平台 <span className="required">*</span></label>
               <select
                 className="form-input"
+                data-field="platform"
                 value={values.platform}
                 onChange={(e) => setField('platform', e.target.value)}
               >
@@ -176,6 +183,7 @@ export const HoldingFormModal = ({
               <label className="form-label">资产类型 <span className="required">*</span></label>
               <select
                 className="form-input"
+                data-field="asset_type"
                 value={values.asset_type}
                 onChange={(e) => setField('asset_type', e.target.value)}
               >
@@ -192,6 +200,7 @@ export const HoldingFormModal = ({
               <input
                 type="text"
                 className="form-input"
+                data-field="code"
                 value={values.code}
                 onChange={(e) => setField('code', e.target.value)}
                 placeholder="请输入标的代码"
@@ -203,6 +212,7 @@ export const HoldingFormModal = ({
               <input
                 type="text"
                 className="form-input"
+                data-field="name"
                 value={values.name}
                 onChange={(e) => setField('name', e.target.value)}
                 placeholder="请输入标的名称"
@@ -217,6 +227,7 @@ export const HoldingFormModal = ({
                 type="text"
                 inputMode="decimal"
                 className="form-input"
+                data-field="quantity"
                 value={values.quantity === 0 ? '' : String(values.quantity)}
                 onChange={(e) => {
                   const v = e.target.value
@@ -237,6 +248,7 @@ export const HoldingFormModal = ({
                 type="text"
                 inputMode="decimal"
                 className="form-input"
+                data-field="cost_price"
                 value={values.cost_price === 0 ? '' : String(values.cost_price)}
                 onChange={(e) => {
                   const v = e.target.value
@@ -259,6 +271,7 @@ export const HoldingFormModal = ({
                 type="text"
                 inputMode="decimal"
                 className="form-input"
+                data-field="current_price"
                 value={values.current_price == null ? '' : String(values.current_price)}
                 onChange={(e) => {
                   const v = e.target.value
@@ -277,6 +290,7 @@ export const HoldingFormModal = ({
               <input
                 type="text"
                 className="form-input"
+                data-field="industry"
                 value={values.industry ?? ''}
                 onChange={(e) => setField('industry', e.target.value || null)}
                 placeholder="可选"
@@ -289,6 +303,7 @@ export const HoldingFormModal = ({
               <input
                 type="date"
                 className="form-input"
+                data-field="buy_date"
                 value={values.buy_date ?? ''}
                 onChange={(e) => setField('buy_date', e.target.value || null)}
               />
@@ -298,6 +313,7 @@ export const HoldingFormModal = ({
               <input
                 type="text"
                 className="form-input"
+                data-field="notes"
                 value={values.notes ?? ''}
                 onChange={(e) => setField('notes', e.target.value || null)}
                 placeholder="可选"
