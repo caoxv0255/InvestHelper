@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { TableSkeleton } from '../components/TableSkeleton'
 import ReactECharts from 'echarts-for-react'
 import { getSectorRotationOverview } from '../api/sector'
 import type { SectorRotationOverview } from '../types'
@@ -378,12 +379,18 @@ const SectorRotation = () => {
         监测行业板块资金流、热力图、强弱切换、风格轮动和债股跷跷板效应，辅助判断市场风格切换。
       </p>
 
-      {loading && (
+      {loading && !data ? (
+        <div className="sector-skeleton">
+          <section className="transaction-card">
+            <TableSkeleton rows={6} columns={4} />
+          </section>
+        </div>
+      ) : loading ? (
         <div className="loading-container">
           <div className="loading-spinner"></div>
           <span>正在加载板块轮动数据...</span>
         </div>
-      )}
+      ) : null}
 
       {error && (
         <div className="error-message">
