@@ -107,11 +107,11 @@ const StrategyLab = () => {
           <label>策略<select value={request.strategy} onChange={(e) => setRequest({ ...request, strategy: e.target.value as BacktestRequest['strategy'] })}>
             <option value="sma_trend">均线趋势</option><option value="momentum">动量轮动</option><option value="rebalance">固定比例再平衡</option><option value="buy_hold">买入持有</option>
           </select></label>
-          <label>初始资金<input type="number" value={request.initial_capital} onChange={(e) => setRequest({ ...request, initial_capital: Number(e.target.value) })} /></label>
-          <label>最大组合回撤<input type="number" step="0.01" value={request.constraints.max_drawdown} onChange={(e) => updateConstraint('max_drawdown', Number(e.target.value))} /></label>
-          <label>单一标的上限<input type="number" step="0.01" value={request.constraints.max_single_weight} onChange={(e) => updateConstraint('max_single_weight', Number(e.target.value))} /></label>
-          <label>每月最多交易<input type="number" value={request.constraints.max_monthly_trades} onChange={(e) => updateConstraint('max_monthly_trades', Number(e.target.value))} /></label>
-          <label>最低调仓金额<input type="number" value={request.constraints.min_trade_amount} onChange={(e) => updateConstraint('min_trade_amount', Number(e.target.value))} /></label>
+          <label>初始资金<input type="text" inputMode="decimal" value={request.initial_capital} onChange={(e) => setRequest({ ...request, initial_capital: Number(e.target.value) })} placeholder="100000" /></label>
+          <label>最大组合回撤<input type="text" inputMode="decimal" step="0.01" value={request.constraints.max_drawdown} onChange={(e) => updateConstraint('max_drawdown', Number(e.target.value))} placeholder="0.20" /></label>
+          <label>单一标的上限<input type="text" inputMode="decimal" step="0.01" value={request.constraints.max_single_weight} onChange={(e) => updateConstraint('max_single_weight', Number(e.target.value))} placeholder="0.30" /></label>
+          <label>每月最多交易<input type="text" inputMode="decimal" value={request.constraints.max_monthly_trades} onChange={(e) => updateConstraint('max_monthly_trades', Number(e.target.value))} placeholder="10" /></label>
+          <label>最低调仓金额<input type="text" inputMode="decimal" value={request.constraints.min_trade_amount} onChange={(e) => updateConstraint('min_trade_amount', Number(e.target.value))} placeholder="1000" /></label>
           <button className="btn btn-primary" onClick={submit} disabled={loading}>{loading ? '计算中...' : '运行回测'}</button>
           {error && <p className="form-error">{error}</p>}
         </section>
