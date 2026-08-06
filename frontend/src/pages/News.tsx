@@ -7,11 +7,12 @@
  * 仍留在本页的：filter 输入（source/keywordInput/activeKeyword/onlyImportant）、
  * 展开的卡片 id 集合、IntersectionObserver 哨兵。
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { getNewsSources, getNewsKeywords } from '../api/news'
 import type { NewsSource } from '../types'
 import { useAsyncResource, useModal } from '../hooks'
+import { useIntersectionObserver } from '../hooks'
 import { useNewsFeed } from '../features/news/hooks/useNewsFeed'
 import { KeywordConfigModal } from '../features/news/components/KeywordConfigModal'
 import { TableSkeleton } from '../components/TableSkeleton'
@@ -138,21 +139,12 @@ const News = () => {
   // 触底加载的哨兵 ref
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
-  // 触底加载：IntersectionObserver
-  useEffect(() => {
-    const node = sentinelRef.current
-    if (!node) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          void feed.loadMore()
-        }
-      },
-      { rootMargin: '200px' },
-    )
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [feed.loadMore])
+  // 触底加载：用通用 IntersectionObserver hook
+  useIntersectionObserver(
+    sentinelRef,
+    () => void feed.loadMore(),
+    { rootMargin: '200px' },
+  )
 
   // 关键词搜索：回车触发
   const handleKeywordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
