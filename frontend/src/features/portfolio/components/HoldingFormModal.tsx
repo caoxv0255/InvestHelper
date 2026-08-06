@@ -135,9 +135,24 @@ export const HoldingFormModal = ({
     onSubmit(values)
   }
 
+  // Enter 提交，Esc 取消（input 元素触发）
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      if (!submitting) onCancel()
+    } else if (e.key === 'Enter' && e.target instanceof HTMLElement) {
+      // 排除 textarea / select（select Enter 是切换）
+      if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return
+      // 排除 type=button（虽然 form 内通常没有）
+      if (e.target instanceof HTMLInputElement && e.target.type === 'button') return
+      e.preventDefault()
+      handleSubmit()
+    }
+  }
+
   return (
     <div className="modal-overlay" onClick={handleOverlayClick}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <form className="modal-content" onKeyDown={handleKeyDown} onSubmit={(e) => { e.preventDefault(); handleSubmit() }}>
         <div className="modal-header">
           <h3>{editing ? '编辑持仓' : '添加持仓'}</h3>
           <button className="modal-close" onClick={onCancel}>×</button>
@@ -296,7 +311,7 @@ export const HoldingFormModal = ({
             {submitting ? (editing ? '保存中...' : '创建中...') : (editing ? '保存' : '创建')}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   )
 }
