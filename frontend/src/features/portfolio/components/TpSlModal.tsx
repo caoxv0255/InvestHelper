@@ -34,8 +34,14 @@ export const TpSlModal = ({
 }: TpSlModalProps) => {
   if (!visible || !holding) return null
 
+  // loading 时禁止 overlay click 关闭 modal，避免误触中断请求
+  const handleOverlayClick = () => {
+    if (loading) return
+    onClose()
+  }
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="modal-content modal-small" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>设置止盈止损 - {holding.name}</h3>

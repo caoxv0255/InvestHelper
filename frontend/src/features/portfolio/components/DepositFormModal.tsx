@@ -90,6 +90,12 @@ export const DepositFormModal = ({
 
   if (!visible) return null
 
+  // submitting 时禁止 overlay click 关闭 modal，避免误触中断请求
+  const handleOverlayClick = () => {
+    if (submitting) return
+    onCancel()
+  }
+
   const { values, errors, setField } = form
 
   const handleSubmit = () => {
@@ -109,7 +115,7 @@ export const DepositFormModal = ({
   }
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
+    <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{editing ? '编辑定期理财' : '添加定期理财'}</h3>

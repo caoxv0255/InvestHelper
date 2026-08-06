@@ -25,8 +25,14 @@ export const DeleteConfirmModal = ({
 }: DeleteConfirmModalProps) => {
   if (!visible) return null
 
+  // submitting 时禁止 overlay click 关闭 modal，避免误触中断请求
+  const handleOverlayClick = () => {
+    if (submitting) return
+    onCancel()
+  }
+
   return (
-    <div className="modal-overlay" onClick={onCancel}>
+    <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="modal-content modal-small" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>确认删除</h3>
