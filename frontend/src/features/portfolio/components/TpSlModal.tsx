@@ -46,18 +46,20 @@ export const TpSlModal = ({
             <div className="form-group">
               <label className="form-label">成本价</label>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 className="form-input"
-                value={holding.cost_price}
+                value={String(holding.cost_price)}
                 disabled
               />
             </div>
             <div className="form-group">
               <label className="form-label">当前价</label>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 className="form-input"
-                value={holding.current_price ?? holding.cost_price}
+                value={String(holding.current_price ?? holding.cost_price)}
                 disabled
               />
             </div>
@@ -66,8 +68,8 @@ export const TpSlModal = ({
             <div className="form-group">
               <label className="form-label">止盈价</label>
               <input
-                type="number"
-                step="0.0001"
+                type="text"
+                inputMode="decimal"
                 className="form-input"
                 value={form.take_profit_price}
                 onChange={(e) =>
@@ -79,8 +81,8 @@ export const TpSlModal = ({
             <div className="form-group">
               <label className="form-label">止损价</label>
               <input
-                type="number"
-                step="0.0001"
+                type="text"
+                inputMode="decimal"
                 className="form-input"
                 value={form.stop_loss_price}
                 onChange={(e) =>
