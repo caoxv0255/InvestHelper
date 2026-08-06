@@ -11,6 +11,7 @@ import type {
   PositionAlertItem,
 } from '../../../types'
 import { SignalBadgeFromResult } from '../../../components/SignalBadge'
+import { TableSkeleton } from '../../../components/TableSkeleton'
 import { formatCurrency, formatPercent } from '../../../utils/format'
 
 export interface HoldingTableProps {
@@ -164,12 +165,9 @@ export const HoldingTable = ({
         </div>
       )}
 
-      {/* 加载状态 */}
+      {/* 加载状态 — skeleton placeholder (10 columns x 5 rows) */}
       {holdingsLoading && (
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <span>加载中...</span>
-        </div>
+        <TableSkeleton rows={5} columns={10} />
       )}
 
       {/* 错误提示 */}
