@@ -16,7 +16,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import type { Holding, HoldingCreate } from '../../../types'
-import { useForm } from '../../../hooks'
+import { useForm, focusFirstError } from '../../../hooks'
 import { searchStocks } from '../../../api/market'
 
 const INITIAL_HOLDING: HoldingCreate = {
@@ -137,12 +137,7 @@ export const HoldingFormModal = ({
     const newErrors = validate(values)
     if (Object.keys(newErrors).length > 0) {
       form.setErrors(newErrors)
-      // focus 到第一个错误字段（增强 UX：用户立刻知道哪里要改）
-      const firstError = Object.keys(newErrors)[0]
-      const el = document.querySelector<HTMLElement>(
-        `[data-field="${firstError}"]`,
-      )
-      el?.focus()
+      focusFirstError(newErrors)
       return
     }
     onSubmit(values)

@@ -6,7 +6,7 @@
  */
 import { useEffect } from 'react'
 import type { Deposit, DepositCreate } from '../../../types'
-import { useForm } from '../../../hooks'
+import { useForm, focusFirstError } from '../../../hooks'
 
 const initialDeposit = (today: string): DepositCreate => ({
   bank: 'cmb',
@@ -109,11 +109,7 @@ export const DepositFormModal = ({
     const newErrors = validate(values)
     if (Object.keys(newErrors).length > 0) {
       form.setErrors(newErrors)
-      const firstError = Object.keys(newErrors)[0]
-      const el = document.querySelector<HTMLElement>(
-        `[data-field="${firstError}"]`,
-      )
-      el?.focus()
+      focusFirstError(newErrors)
       return
     }
     onSubmit(values)
