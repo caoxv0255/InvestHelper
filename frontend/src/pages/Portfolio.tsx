@@ -156,6 +156,7 @@ const Portfolio = () => {
   const submitTpSlForm = async () => {
     const editing = tpSlModal.data
     if (!editing) return
+    if (tpSlLoading) return  // re-entrancy guard（与 autoCalculateTpSl 共享 loading state）
 
     const takeProfitPrice = tpSlForm.take_profit_price
       ? parseFloat(tpSlForm.take_profit_price)
@@ -164,6 +165,7 @@ const Portfolio = () => {
       ? parseFloat(tpSlForm.stop_loss_price)
       : null
 
+    setTpSlLoading(true)
     try {
       await updateTakeProfitStopLoss(editing.id, {
         take_profit_price: takeProfitPrice,
@@ -175,6 +177,8 @@ const Portfolio = () => {
       void positionAlerts.refetch()
     } catch (err: any) {
       alert(err.message || '保存失败')
+    } finally {
+      setTpSlLoading(false)
     }
   }
 

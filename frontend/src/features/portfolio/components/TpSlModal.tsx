@@ -105,8 +105,10 @@ export const TpSlModal = ({
           </div>
         </div>
         <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={onClose}>取消</button>
-          <button className="btn btn-primary" onClick={onSubmit}>保存</button>
+          <button className="btn btn-secondary" onClick={onClose} disabled={loading}>取消</button>
+          <button className="btn btn-primary" onClick={onSubmit} disabled={loading}>
+            {loading ? '保存中...' : '保存'}
+          </button>
         </div>
       </div>
     </div>
