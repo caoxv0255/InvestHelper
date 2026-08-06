@@ -145,24 +145,42 @@ export const DepositFormModal = ({
             <div className="form-group">
               <label className="form-label">本金 <span className="required">*</span></label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 className="form-input"
-                value={values.principal}
-                onChange={(e) => setField('principal', parseFloat(e.target.value) || 0)}
+                value={values.principal === 0 ? '' : String(values.principal)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === '' || v === '.') {
+                    setField('principal', 0)
+                  } else {
+                    const n = parseFloat(v)
+                    setField('principal', Number.isFinite(n) ? n : 0)
+                  }
+                }}
                 onBlur={autoCalculate}
+                placeholder="0.00"
               />
               {errors.principal && <div className="form-error">{errors.principal}</div>}
             </div>
             <div className="form-group">
               <label className="form-label">年化利率(%) <span className="required">*</span></label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 className="form-input"
-                value={values.annual_rate}
-                onChange={(e) => setField('annual_rate', parseFloat(e.target.value) || 0)}
+                value={values.annual_rate === 0 ? '' : String(values.annual_rate)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === '' || v === '.') {
+                    setField('annual_rate', 0)
+                  } else {
+                    const n = parseFloat(v)
+                    setField('annual_rate', Number.isFinite(n) ? n : 0)
+                  }
+                }}
                 onBlur={autoCalculate}
+                placeholder="0.00"
               />
               {errors.annual_rate && <div className="form-error">{errors.annual_rate}</div>}
             </div>
@@ -195,11 +213,20 @@ export const DepositFormModal = ({
             <div className="form-group">
               <label className="form-label">预期收益</label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 className="form-input"
-                value={values.expected_return}
-                onChange={(e) => setField('expected_return', parseFloat(e.target.value) || 0)}
+                value={values.expected_return === 0 ? '' : String(values.expected_return)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === '' || v === '.') {
+                    setField('expected_return', 0)
+                  } else {
+                    const n = parseFloat(v)
+                    setField('expected_return', Number.isFinite(n) ? n : 0)
+                  }
+                }}
+                placeholder="0.00"
               />
             </div>
             <div className="form-group">
