@@ -75,6 +75,8 @@ const Portfolio = () => {
   const [tpSlLoading, setTpSlLoading] = useState(false)
   // ===== 持仓表单 submitting state（驱动 modal 按钮 disable + loading 文案） =====
   const [holdingSubmitting, setHoldingSubmitting] = useState(false)
+  // ===== 定期表单 submitting state =====
+  const [depositSubmitting, setDepositSubmitting] = useState(false)
 
   // ===== Action ownership (Phase 2B: 接入 usePortfolioActions) =====
   const actions = usePortfolioActions({
@@ -96,8 +98,15 @@ const Portfolio = () => {
       setHoldingSubmitting(false)
     }
   }
-  const submitDepositForm = (values: DepositCreate) =>
-    void actions.submitDepositForm(values, depositModal.data)
+  const submitDepositForm = async (values: DepositCreate) => {
+    if (depositSubmitting) return
+    setDepositSubmitting(true)
+    try {
+      await actions.submitDepositForm(values, depositModal.data)
+    } finally {
+      setDepositSubmitting(false)
+    }
+  }
   const confirmDelete = () => void actions.confirmDelete(deleteModal.data)
 
   // openDeleteModal 仍是 page 业务（"打开 modal"是 UI 触发，不是 mutation）
@@ -253,6 +262,7 @@ const Portfolio = () => {
       <DepositFormModal
         visible={depositModal.visible}
         editing={depositModal.data}
+        submitting={depositSubmitting}
         onCancel={depositModal.close}
         onSubmit={submitDepositForm}
       />
