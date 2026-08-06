@@ -77,6 +77,8 @@ const Portfolio = () => {
   const [holdingSubmitting, setHoldingSubmitting] = useState(false)
   // ===== 定期表单 submitting state =====
   const [depositSubmitting, setDepositSubmitting] = useState(false)
+  // ===== 删除确认 submitting state =====
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
 
   // ===== Action ownership (Phase 2B: 接入 usePortfolioActions) =====
   const actions = usePortfolioActions({
@@ -107,7 +109,15 @@ const Portfolio = () => {
       setDepositSubmitting(false)
     }
   }
-  const confirmDelete = () => void actions.confirmDelete(deleteModal.data)
+  const confirmDelete = async () => {
+    if (deleteSubmitting) return
+    setDeleteSubmitting(true)
+    try {
+      await actions.confirmDelete(deleteModal.data)
+    } finally {
+      setDeleteSubmitting(false)
+    }
+  }
 
   // openDeleteModal 仍是 page 业务（"打开 modal"是 UI 触发，不是 mutation）
   const openDeleteModal = (type: 'holding' | 'deposit', id: number, name: string) => {
@@ -271,6 +281,7 @@ const Portfolio = () => {
       <DeleteConfirmModal
         visible={deleteModal.visible}
         target={deleteModal.data}
+        submitting={deleteSubmitting}
         onCancel={deleteModal.close}
         onConfirm={() => void confirmDelete()}
       />
