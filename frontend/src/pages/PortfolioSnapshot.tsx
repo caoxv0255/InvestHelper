@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { capturePortfolioSnapshot, getPortfolioHistory, getPortfolioSnapshot, type PortfolioHistory, type PortfolioSnapshot } from '../api/portfolio'
+import { TableSkeleton } from '../components/TableSkeleton'
 import '../styles/PortfolioSnapshot.css'
 
 const PortfolioSnapshot = () => {
@@ -30,7 +31,18 @@ const PortfolioSnapshot = () => {
     <button className="btn btn-primary" onClick={capture} disabled={loading}>{loading ? '处理中...' : '保存今日快照'}</button>
     <button className="btn btn-secondary" onClick={load} disabled={loading}>刷新数据</button>
     {error && <p className="form-error">{error}</p>}
-    {snapshot && <>
+    {loading && !snapshot ? (
+      <div className="snapshot-skeleton">
+        <div className="snapshot-summary">
+          <div className="snapshot-card">
+            <TableSkeleton rows={1} columns={2} />
+          </div>
+        </div>
+        <div className="transaction-card">
+          <TableSkeleton rows={6} columns={8} />
+        </div>
+      </div>
+    ) : snapshot && <>
       <div className="snapshot-summary">
         {Object.entries(snapshot.summary_by_currency).map(([currency, values]) => <div className="snapshot-card" key={currency}><span>{currency}市值</span><strong>{values.market_value.toFixed(2)}</strong><small>总收益 {values.total_profit.toFixed(2)}</small></div>)}
         <div className="snapshot-card"><span>流水笔数</span><strong>{snapshot.transaction_count}</strong><small>成本法：加权平均</small></div>
