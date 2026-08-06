@@ -58,9 +58,9 @@ const Transactions = () => {
         <label>交易日期<input type="date" value={form.trade_date} onChange={(e) => setForm({ ...form, trade_date: e.target.value })} /></label>
         <label>代码<input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="如 510300" /></label>
         <label>名称<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="如 沪深300ETF" /></label>
-        <label>数量<input type="number" min="0" step="0.000001" value={form.quantity || ''} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} /></label>
-        <label>成交价/分红金额<input type="number" min="0" step="0.000001" value={form.price || ''} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} /></label>
-        <label>手续费<input type="number" min="0" step="0.01" value={form.fee || ''} onChange={(e) => setForm({ ...form, fee: Number(e.target.value) })} /></label>
+        <label>数量<input type="text" inputMode="decimal" value={form.quantity || ''} onChange={(e) => { const v = e.target.value; if (v === '' || v === '.') { setForm({ ...form, quantity: 0 }); } else { const n = Number(v); setForm({ ...form, quantity: Number.isFinite(n) ? n : 0 }); } }} placeholder="0.000000" /></label>
+        <label>成交价/分红金额<input type="text" inputMode="decimal" value={form.price || ''} onChange={(e) => { const v = e.target.value; if (v === '' || v === '.') { setForm({ ...form, price: 0 }); } else { const n = Number(v); setForm({ ...form, price: Number.isFinite(n) ? n : 0 }); } }} placeholder="0.000000" /></label>
+        <label>手续费<input type="text" inputMode="decimal" value={form.fee || ''} onChange={(e) => { const v = e.target.value; if (v === '' || v === '.') { setForm({ ...form, fee: 0 }); } else { const n = Number(v); setForm({ ...form, fee: Number.isFinite(n) ? n : 0 }); } }} placeholder="0.00" /></label>
         <label>币种<select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}><option value="CNY">人民币</option><option value="HKD">港币</option><option value="USD">美元</option></select></label>
       </div>
       <button className="btn btn-primary" onClick={submit} disabled={loading}>保存流水</button>
