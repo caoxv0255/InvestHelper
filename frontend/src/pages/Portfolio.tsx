@@ -12,16 +12,6 @@
  */
 import { useState } from 'react'
 import {
-  createHolding,
-  updateHolding,
-  deleteHolding,
-} from '../api/holdings'
-import {
-  createDeposit,
-  updateDeposit,
-  deleteDeposit,
-} from '../api/deposits'
-import {
   calculateTakeProfitStopLoss,
   updateTakeProfitStopLoss,
 } from '../api/position'
@@ -35,6 +25,7 @@ import type {
 } from '../types'
 import { useModal } from '../hooks'
 import { usePortfolioData } from '../features/portfolio/hooks/usePortfolioData'
+import { usePortfolioActions } from '../features/portfolio/hooks/usePortfolioActions'
 import { HoldingTable } from '../features/portfolio/components/HoldingTable'
 import { DepositTable } from '../features/portfolio/components/DepositTable'
 import { HoldingFormModal } from '../features/portfolio/components/HoldingFormModal'
@@ -83,59 +74,26 @@ const Portfolio = () => {
   })
   const [tpSlLoading, setTpSlLoading] = useState(false)
 
-  // ===== Holding CRUD =====
-  const submitHoldingForm = async (values: HoldingCreate) => {
-    const editing = holdingModal.data
-    try {
-      if (editing) {
-        await updateHolding(editing.id, values)
-      } else {
-        await createHolding(values)
-      }
-      holdingModal.close()
-      void holdings.refetch()
-    } catch (err: any) {
-      alert(err.message || '保存失败')
-    }
-  }
+  // ===== Action ownership (Phase 2B: 接入 usePortfolioActions) =====
+  const actions = usePortfolioActions({
+    refetchHoldings: holdings.refetch,
+    refetchDeposits: deposits.refetch,
+    closeHoldingModal: holdingModal.close,
+    closeDepositModal: depositModal.close,
+    closeDeleteModal: deleteModal.close,
+  })
 
-  // ===== Deposit CRUD =====
-  const submitDepositForm = async (values: DepositCreate) => {
-    const editing = depositModal.data
-    try {
-      if (editing) {
-        await updateDeposit(editing.id, values)
-      } else {
-        await createDeposit(values)
-      }
-      depositModal.close()
-      void deposits.refetch()
-    } catch (err: any) {
-      alert(err.message || '保存失败')
-    }
-  }
+  // thin wrappers — 保持 JSX 现有 onSubmit/onConfirm 签名 1:1，
+  // 让 hook 不读 page-owned modal state
+  const submitHoldingForm = (values: HoldingCreate) =>
+    void actions.submitHoldingForm(values, holdingModal.data)
+  const submitDepositForm = (values: DepositCreate) =>
+    void actions.submitDepositForm(values, depositModal.data)
+  const confirmDelete = () => void actions.confirmDelete(deleteModal.data)
 
-  // ===== Delete =====
+  // openDeleteModal 仍是 page 业务（"打开 modal"是 UI 触发，不是 mutation）
   const openDeleteModal = (type: 'holding' | 'deposit', id: number, name: string) => {
     deleteModal.open({ type, id, name })
-  }
-
-  const confirmDelete = async () => {
-    const target = deleteModal.data
-    if (!target) return
-
-    try {
-      if (target.type === 'holding') {
-        await deleteHolding(target.id)
-        void holdings.refetch()
-      } else {
-        await deleteDeposit(target.id)
-        void deposits.refetch()
-      }
-      deleteModal.close()
-    } catch (err: any) {
-      alert(err.message || '删除失败')
-    }
   }
 
   // ===== TpSl =====
