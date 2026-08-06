@@ -63,6 +63,10 @@ export interface PortfolioData {
   }>
   positionAlerts: AsyncResource<PositionAlertItem[]>
   deposits: AsyncResource<Deposit[]>
+
+  // —— 横跨多资源的统一错误条（Phase 2A 配套：保持红条行为 1:1） ——
+  auxiliaryError: string | null
+  setAuxiliaryError: (msg: string | null) => void
 }
 
 export function usePortfolioData(): PortfolioData {
@@ -72,11 +76,21 @@ export function usePortfolioData(): PortfolioData {
   const [assetTypeFilter, setAssetTypeFilter] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('')
 
-  // ===== Internal auxiliary error logger =====
-  // 与原页面 setAuxError 行为一致：横跨多个资源的统一错误条控制台 warn。
-  // Phase 1 不暴露给调用方——因为 page 仍持有 auxiliaryError state。
-  // eslint-disable-next-line no-console
-  const logAuxError = (msg: string) => console.warn('[auxiliary load]', msg)
+  // ===== Auxiliary error banner =====
+  // 与原页面 setAuxError 行为一致：横跨多个资源的统一错误条 state。
+  // Phase 2A 把 ownership 从 page 迁到 hook，行为 1:1：
+  //   - setAuxError(msg)      → 写入并 console.warn
+  //   - setAuxiliaryError(null) → 关闭（清空）
+  const [auxiliaryError, setAuxiliaryErrorInternal] = useState<string | null>(null)
+  const setAuxError = (msg: string) => {
+    setAuxiliaryErrorInternal(msg)
+    // eslint-disable-next-line no-console
+    console.warn('[auxiliary load]', msg)
+  }
+  const setAuxiliaryError = (msg: string | null) => {
+    if (msg === null) setAuxiliaryErrorInternal(null)
+    else setAuxError(msg)
+  }
 
   // ===== Holdings =====
   const holdings = useAsyncResource<Holding[]>(
@@ -116,7 +130,7 @@ export function usePortfolioData(): PortfolioData {
     {
       initialData: {} as Record<string, TechnicalSignal>,
       skip: activeTab !== 'holdings',
-      onError: (e: Error) => logAuxError(`加载技术信号失败：${e.message}`),
+      onError: (e: Error) => setAuxError(`加载技术信号失败：${e.message}`),
     },
   )
 
@@ -142,7 +156,7 @@ export function usePortfolioData(): PortfolioData {
         summary: { total_assets: 0, risk_tolerance: 0.02 },
       },
       skip: activeTab !== 'holdings',
-      onError: (e: Error) => logAuxError(`加载仓位建议失败：${e.message}`),
+      onError: (e: Error) => setAuxError(`加载仓位建议失败：${e.message}`),
     },
   )
 
@@ -153,7 +167,7 @@ export function usePortfolioData(): PortfolioData {
     {
       initialData: [] as PositionAlertItem[],
       skip: activeTab !== 'holdings',
-      onError: (e: Error) => logAuxError(`加载止盈止损预警失败：${e.message}`),
+      onError: (e: Error) => setAuxError(`加载止盈止损预警失败：${e.message}`),
     },
   )
 
@@ -178,5 +192,7 @@ export function usePortfolioData(): PortfolioData {
     positionSuggestions,
     positionAlerts,
     deposits,
+    auxiliaryError,
+    setAuxiliaryError,
   }
 }

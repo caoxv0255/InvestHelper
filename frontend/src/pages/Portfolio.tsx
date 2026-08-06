@@ -12,21 +12,16 @@
  */
 import { useState } from 'react'
 import {
-  getHoldings,
   createHolding,
   updateHolding,
   deleteHolding,
 } from '../api/holdings'
 import {
-  getDeposits,
   createDeposit,
   updateDeposit,
   deleteDeposit,
 } from '../api/deposits'
-import { batchGetSignals } from '../api/signals'
 import {
-  getPositionSuggestions,
-  getPositionAlerts,
   calculateTakeProfitStopLoss,
   updateTakeProfitStopLoss,
 } from '../api/position'
@@ -36,11 +31,10 @@ import type {
   Deposit,
   DepositCreate,
   TechnicalSignal,
-  PositionSuggestion,
-  PositionAlertItem,
   TakeProfitStopLossResult,
 } from '../types'
-import { useAsyncResource, useModal } from '../hooks'
+import { useModal } from '../hooks'
+import { usePortfolioData } from '../features/portfolio/hooks/usePortfolioData'
 import { HoldingTable } from '../features/portfolio/components/HoldingTable'
 import { DepositTable } from '../features/portfolio/components/DepositTable'
 import { HoldingFormModal } from '../features/portfolio/components/HoldingFormModal'
@@ -54,90 +48,25 @@ import { TpSlModal } from '../features/portfolio/components/TpSlModal'
 import { SuggestionsModal } from '../features/portfolio/components/SuggestionsModal'
 import '../styles/Portfolio.css'
 
-type TabType = 'holdings' | 'deposits'
-
 const Portfolio = () => {
-  // ===== Tab & filters =====
-  const [activeTab, setActiveTab] = useState<TabType>('holdings')
-  const [platformFilter, setPlatformFilter] = useState<string>('')
-  const [assetTypeFilter, setAssetTypeFilter] = useState<string>('')
-  const [statusFilter, setStatusFilter] = useState<string>('')
-
-  // ===== Auxiliary error banner =====
-  const [auxiliaryError, setAuxiliaryError] = useState<string | null>(null)
-  const setAuxError = (msg: string) => {
-    setAuxiliaryError(msg)
-    // eslint-disable-next-line no-console
-    console.warn('[auxiliary load]', msg)
-  }
-
-  // ===== Holdings =====
-  const holdings = useAsyncResource(
-    () => getHoldings(platformFilter || undefined, assetTypeFilter || undefined),
-    [activeTab, platformFilter, assetTypeFilter],
-    { initialData: [] as Holding[], skip: activeTab !== 'holdings' },
-  )
-
-  // ===== 技术信号（依赖 holdings.data，自动跟随） =====
-  const signals = useAsyncResource(
-    async () => {
-      const target = holdings.data ?? []
-      const items = target
-        .filter((h) => h.asset_type === 'stock' || h.asset_type === 'fund')
-        .map((h) => ({ code: h.code, period: 'daily' as const, asset_type: h.asset_type }))
-      if (items.length === 0) return {} as Record<string, TechnicalSignal>
-      const response = await batchGetSignals(items)
-      const map: Record<string, TechnicalSignal> = {}
-      response.results.forEach((s) => {
-        map[s.code] = s
-      })
-      return map
-    },
-    [holdings.data, activeTab],
-    {
-      initialData: {} as Record<string, TechnicalSignal>,
-      skip: activeTab !== 'holdings',
-      onError: (e) => setAuxError(`加载技术信号失败：${e.message}`),
-    },
-  )
-
-  // ===== 仓位建议 =====
-  const positionSuggestions = useAsyncResource(
-    async () => {
-      const data = await getPositionSuggestions()
-      return {
-        suggestions: data.suggestions,
-        summary: { total_assets: data.total_assets, risk_tolerance: data.risk_tolerance },
-      }
-    },
-    [activeTab],
-    {
-      initialData: {
-        suggestions: [] as PositionSuggestion[],
-        summary: { total_assets: 0, risk_tolerance: 0.02 },
-      },
-      skip: activeTab !== 'holdings',
-      onError: (e) => setAuxError(`加载仓位建议失败：${e.message}`),
-    },
-  )
-
-  // ===== 止盈止损预警 =====
-  const positionAlerts = useAsyncResource(
-    async () => (await getPositionAlerts()).alerts,
-    [activeTab],
-    {
-      initialData: [] as PositionAlertItem[],
-      skip: activeTab !== 'holdings',
-      onError: (e) => setAuxError(`加载止盈止损预警失败：${e.message}`),
-    },
-  )
-
-  // ===== Deposits =====
-  const deposits = useAsyncResource(
-    () => getDeposits(statusFilter || undefined),
-    [activeTab, statusFilter],
-    { initialData: [] as Deposit[], skip: activeTab !== 'deposits' },
-  )
+  // ===== Data ownership (Phase 2A: 接入 usePortfolioData) =====
+  const {
+    activeTab,
+    setActiveTab,
+    platformFilter,
+    setPlatformFilter,
+    assetTypeFilter,
+    setAssetTypeFilter,
+    statusFilter,
+    setStatusFilter,
+    holdings,
+    signals,
+    positionSuggestions,
+    positionAlerts,
+    deposits,
+    auxiliaryError,
+    setAuxiliaryError,
+  } = usePortfolioData()
 
   // ===== Modals =====
   const holdingModal = useModal<Holding>()
