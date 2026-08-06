@@ -15,6 +15,7 @@
  */
 import { useMemo } from 'react'
 import ReactECharts from 'echarts-for-react'
+import { TableSkeleton } from '../../components/TableSkeleton'
 import { useRiskAnalysis } from './hooks/useRiskAnalysis'
 import { buildIndustryOption } from './charts/industryOption'
 import { buildCorrelationOption } from './charts/correlationOption'
@@ -44,12 +45,16 @@ export const RiskAnalysisPage = () => {
     <div className="risk-analysis-page">
       <h1 className="page-title">风险分析</h1>
 
-      {loading && (
+      {loading && !data ? (
+        <div className="risk-skeleton">
+          <TableSkeleton rows={5} columns={3} />
+        </div>
+      ) : loading ? (
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <span>正在计算风险指标...</span>
+          <span>加载中...</span>
         </div>
-      )}
+      ) : null}
 
       {error && (
         <div className="error-message">

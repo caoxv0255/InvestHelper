@@ -15,6 +15,7 @@
 import { useState } from 'react'
 import { useOpportunities } from './hooks/useOpportunities'
 import { OpportunityCard } from './components/OpportunityCard'
+import { TableSkeleton } from '../../components/TableSkeleton'
 import { FilterPanel } from './components/FilterPanel'
 import { HistorySection } from './components/HistorySection'
 
@@ -91,9 +92,8 @@ export const OpportunitiesPage = () => {
           />
 
           {loading ? (
-            <div className="loading-container">
-              <div className="loading-spinner"></div>
-              <span>加载中...</span>
+            <div className="opportunities-skeleton">
+              <TableSkeleton rows={4} columns={3} />
             </div>
           ) : filteredOpportunities.length === 0 ? (
             <div className="empty-state">
