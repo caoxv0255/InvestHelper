@@ -1,0 +1,97 @@
+/* ============================================================
+ * InvestHelper — Investment Design System Tokens
+ * Phase 1: Foundation Layer
+ *
+ * Investment-grade design tokens. Reference: Fidelity/Schwab
+ * trustworthiness + TradingView density.
+ *
+ * RULE: visual changes go through these tokens. Do not hard-code
+ * hex / px / shadow / radius anywhere downstream.
+ * ============================================================ */
+
+:root {
+  /* ─── Color: Surfaces ─── */
+  --color-bg-canvas: #FAFBFC;          /* page background */
+  --color-bg-surface: #FFFFFF;         /* card / table / modal */
+  --color-bg-subtle: #F4F6F8;          /* hover / alt row */
+  --color-bg-emphasis: #EFF1F4;        /* active tab / selected */
+  --color-bg-disabled: #F1F5F9;        /* Phase 3+ Button/Input disabled */
+
+  /* ─── Color: Borders ─── */
+  --color-border-default: #E5E7EB;
+  --color-border-strong: #D1D5DB;
+  --color-border-disabled: #E2E8F0;    /* Phase 3+ disabled state */
+
+  /* ─── Color: Text ─── */
+  --color-text-primary: #0F172A;       /* main text / numbers */
+  --color-text-secondary: #475569;     /* labels */
+  --color-text-tertiary: #94A3B8;      /* hints */
+  --color-text-muted: #CBD5E1;         /* placeholder / disabled */
+
+  /* ─── Color: Brand Accent (deep blue, Fidelity-like) ─── */
+  --color-accent-primary: #1E40AF;
+  --color-accent-primary-hover: #1E3A8A;
+  --color-accent-primary-active: #172554;  /* Phase 3+ Button active */
+  --color-accent-primary-subtle: #EFF6FF;
+
+  /* ─── Color: Market (A-share: red up, green down) ─── */
+  --color-profit-up: #DC2626;
+  --color-profit-down: #16A34A;
+  --color-neutral: #64748B;
+
+  /* ─── Color: Semantic ─── */
+  --color-info: #2563EB;
+  --color-warning: #D97706;
+  --color-danger: #B91C1C;
+
+  /* ─── Color: Chart (ECharts / lightweight-charts) ─── */
+  --color-chart-grid: #E5E7EB;
+  --color-chart-axis: #94A3B8;
+
+  /* ─── Spacing Scale (4 / 8 / 12 / 16 / 24 / 32 / 48 / 64) ─── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ─── Typography Scale (12 / 13 / 14 / 16 / 18 / 20 / 24 / 32) ─── */
+  --font-xs: 12px;     /* caption / hint */
+  --font-sm: 13px;     /* small body / table cell */
+  --font-base: 14px;   /* default body */
+  --font-md: 16px;     /* large body */
+  --font-lg: 18px;     /* subtitle */
+  --font-xl: 20px;     /* title */
+  --font-2xl: 24px;    /* page title */
+  --font-3xl: 32px;    /* hero KPI */
+
+  /* ─── Font Weight ─── */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ─── Font Family ─── */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+
+  /* ─── Border Radius (0 / 4 / 8 / 12) ─── */
+  --radius-none: 0;
+  --radius-sm: 4px;     /* input / button / badge */
+  --radius-md: 8px;     /* card */
+  --radius-lg: 12px;    /* modal */
+
+  /* ─── Shadow (none / card / modal) ─── */
+  --shadow-none: none;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-modal: 0 8px 24px rgba(15, 23, 42, 0.12);
+
+  /* ─── Layout (for AppShell in Phase 3) ─── */
+  --layout-sidebar-width: 240px;
+  --layout-header-height: 56px;
+  --layout-content-max-width: 1440px;
+}

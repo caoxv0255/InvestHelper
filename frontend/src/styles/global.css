@@ -1,3 +1,6 @@
+/* Investment Design System — Phase 1 token layer */
+@import './tokens.css';
+
 * {
   margin: 0;
   padding: 0;
