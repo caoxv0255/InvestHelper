@@ -1,0 +1,190 @@
+/* ============================================================
+ * InvestHelper — UI Primitives (Phase UI-2)
+ * Investment Design System — Component layer
+ * Token-only. No hardcoded values.
+ * ============================================================ */
+
+/* ─── Card ─── */
+.ds-card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-card);
+}
+
+.ds-card--bordered {
+  box-shadow: var(--shadow-none);
+}
+
+/* ─── Button ─── */
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+.ds-btn:focus-visible {
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+}
+
+.ds-btn:disabled {
+  background: var(--color-bg-disabled);
+  border-color: var(--color-border-disabled);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.ds-btn--md {
+  height: 36px;
+  padding: 0 var(--space-4);
+  font-size: var(--font-base);
+}
+
+.ds-btn--sm {
+  height: 28px;
+  padding: 0 var(--space-3);
+  font-size: var(--font-sm);
+}
+
+.ds-btn--primary {
+  background: var(--color-accent-primary);
+  color: var(--color-bg-surface);
+}
+.ds-btn--primary:hover:not(:disabled) {
+  background: var(--color-accent-primary-hover);
+}
+.ds-btn--primary:active:not(:disabled) {
+  background: var(--color-accent-primary-active);
+}
+
+.ds-btn--secondary {
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-default);
+}
+.ds-btn--secondary:hover:not(:disabled) {
+  background: var(--color-bg-subtle);
+  border-color: var(--color-border-strong);
+}
+
+.ds-btn--ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+.ds-btn--ghost:hover:not(:disabled) {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+}
+
+.ds-btn--danger {
+  background: var(--color-danger);
+  color: var(--color-bg-surface);
+}
+.ds-btn--danger:hover:not(:disabled) {
+  background: var(--color-accent-primary-active);
+}
+
+/* ─── Input ─── */
+.ds-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ds-input-label {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.ds-input {
+  height: 36px;
+  padding: 0 var(--space-3);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--font-base);
+  font-variant-numeric: tabular-nums;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ds-input:focus {
+  outline: none;
+  border-color: var(--color-accent-primary);
+  box-shadow: 0 0 0 3px var(--color-accent-primary-subtle);
+}
+
+.ds-input:disabled {
+  background: var(--color-bg-disabled);
+  border-color: var(--color-border-disabled);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.ds-input--error {
+  border-color: var(--color-danger);
+}
+
+.ds-input-error {
+  font-size: var(--font-xs);
+  color: var(--color-danger);
+}
+
+/* ─── Select ─── */
+.ds-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23475569' stroke-width='1.5'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  padding-right: var(--space-7);
+}
+
+/* ─── Badge ─── */
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-medium);
+  line-height: 1;
+}
+
+.ds-badge--success { background: var(--color-success-subtle); color: var(--color-profit-down); }
+.ds-badge--danger  { background: var(--color-danger-subtle);  color: var(--color-profit-up); }
+.ds-badge--warning { background: var(--color-warning-subtle); color: var(--color-warning); }
+.ds-badge--info    { background: var(--color-info-subtle);    color: var(--color-info); }
+.ds-badge--neutral { background: var(--color-bg-subtle);      color: var(--color-text-secondary); }
+
+/* ─── Divider ─── */
+.ds-divider {
+  border: 0;
+  border-top: 1px solid var(--color-border-default);
+  margin: var(--space-4) 0;
+}
+
+.ds-divider--vertical {
+  width: 1px;
+  height: auto;
+  border-top: 0;
+  border-left: 1px solid var(--color-border-default);
+  margin: 0 var(--space-3);
+  align-self: stretch;
+}

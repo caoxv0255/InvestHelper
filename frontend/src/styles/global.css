@@ -1,5 +1,7 @@
 /* Investment Design System — Phase 1 token layer */
 @import './tokens.css';
+/* Investment Design System — Phase UI-2 component layer */
+@import './components.css';
 
 * {
   margin: 0;

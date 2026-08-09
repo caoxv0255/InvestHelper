@@ -43,6 +43,11 @@
   --color-info: #2563EB;
   --color-warning: #D97706;
   --color-danger: #B91C1C;
+  /* ─── Color: Semantic Subtle (component backgrounds) ─── */
+  --color-success-subtle: rgba(22, 163, 74, 0.12);
+  --color-danger-subtle: rgba(220, 38, 38, 0.12);
+  --color-warning-subtle: rgba(217, 119, 6, 0.12);
+  --color-info-subtle: rgba(37, 99, 235, 0.12);
 
   /* ─── Color: Chart (ECharts / lightweight-charts) ─── */
   --color-chart-grid: #E5E7EB;
