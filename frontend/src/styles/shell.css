@@ -1,0 +1,212 @@
+/* ============================================================
+ * InvestHelper — AppShell Layout (Phase 2)
+ * Investment Design System — Layout primitives
+ * Token-only. No hardcoded values.
+ * ============================================================ */
+
+/* ─── Shell ─── */
+.ds-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--color-bg-canvas);
+  font-family: var(--font-sans);
+}
+
+/* ─── Sidebar ─── */
+.ds-sidebar {
+  width: var(--layout-sidebar-width);
+  background: var(--color-bg-surface);
+  border-right: 1px solid var(--color-border-default);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.ds-sidebar-nav {
+  padding: var(--space-5) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.ds-sidebar-group-title {
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0 var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.ds-sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.ds-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-base);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ds-sidebar-item:hover {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+}
+
+.ds-sidebar-item--active {
+  background: var(--color-accent-primary-subtle);
+  color: var(--color-accent-primary);
+  font-weight: var(--weight-semibold);
+}
+
+.ds-sidebar-item-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  flex-shrink: 0;
+  border: 1px solid var(--color-border-default);
+}
+
+.ds-sidebar-item--active .ds-sidebar-item-letter {
+  background: var(--color-accent-primary);
+  color: var(--color-bg-surface);
+  border-color: var(--color-accent-primary);
+}
+
+.ds-sidebar-item-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Shell Main ─── */
+.ds-shell-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ─── Header ─── */
+.ds-header {
+  display: flex;
+  align-items: center;
+  height: var(--layout-header-height);
+  padding: 0 var(--space-5);
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border-default);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.ds-header-menu {
+  display: none;
+  background: none;
+  border: none;
+  padding: var(--space-2);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  margin-right: var(--space-3);
+  font-size: var(--font-lg);
+  line-height: 1;
+}
+
+.ds-header-menu:hover {
+  background: var(--color-bg-subtle);
+}
+
+.ds-header-brand {
+  font-size: var(--font-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.ds-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* ─── Content ─── */
+.ds-shell-content {
+  flex: 1;
+  padding: var(--space-5);
+  max-width: var(--layout-content-max-width);
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ─── Responsive: Tablet (768-1199px) ─── */
+@media (max-width: 1199px) {
+  .ds-sidebar {
+    width: 64px;
+  }
+
+  .ds-sidebar-group-title,
+  .ds-sidebar-item-label {
+    display: none;
+  }
+
+  .ds-sidebar-item {
+    justify-content: center;
+    padding: var(--space-2);
+  }
+}
+
+/* ─── Responsive: Mobile (<768px) ─── */
+@media (max-width: 767px) {
+  .ds-header-menu {
+    display: inline-flex;
+  }
+
+  .ds-sidebar {
+    position: fixed;
+    top: var(--layout-header-height);
+    left: 0;
+    width: var(--layout-sidebar-width);
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    z-index: 20;
+  }
+
+  .ds-sidebar[data-open="true"] {
+    transform: translateX(0);
+    box-shadow: var(--shadow-modal);
+  }
+
+  .ds-sidebar-group-title,
+  .ds-sidebar-item-label {
+    display: block;
+  }
+
+  .ds-sidebar-item {
+    justify-content: flex-start;
+    padding: var(--space-2) var(--space-3);
+  }
+}
