@@ -58,8 +58,9 @@ npm run dev
 
 ```bash
 cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+uv sync                              # 或 pip install -r requirements.txt（兼容路径）
+uv run alembic upgrade head          # 首次启动必须
+uv run uvicorn app.main:app --reload --port 8000
 ```
 
 后端将在 http://localhost:8000 启动
@@ -131,16 +132,16 @@ docker compose up --build
 
 ## 本地开发
 
-```powershell
+后端用 [uv](https://docs.astral.sh/uv/) 管理依赖（pyproject.toml + uv.lock）；前端用 npm。
+
+```bash
 # 后端
 cd backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-Copy-Item .env.example .env
-alembic upgrade head            # 首次启动必须
-python -m scripts.seed          # 可选：写入样例数据
-uvicorn app.main:app --reload --port 8000
+uv sync                                # 按 uv.lock 装依赖到 .venv
+cp .env.example .env
+uv run alembic upgrade head            # 首次启动必须
+uv run python -m scripts.seed          # 可选：写入样例数据
+uv run uvicorn app.main:app --reload --port 8000
 
 # 前端（另开终端）
 cd frontend
@@ -149,6 +150,8 @@ npm run dev
 ```
 
 访问 http://localhost:5173 （前端）+ http://localhost:8000/docs （后端 OpenAPI）。
+
+> **pip 兼容路径**：`requirements.txt` 仍保留作为等价依赖清单供 pip 用户使用；新增依赖请同步改 `pyproject.toml` 并 `uv lock`。
 
 ## 运行测试
 

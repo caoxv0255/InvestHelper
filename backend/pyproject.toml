@@ -1,3 +1,45 @@
+[project]
+name = "invest-helper-backend"
+version = "0.1.0"
+description = "投资助手后端 (FastAPI + SQLAlchemy + Alembic)"
+requires-python = ">=3.13"
+readme = "../README.md"
+# 依赖用 caret 约束大版本（避免字段突变），具体版本由 uv.lock 锁定
+dependencies = [
+  # Web framework（fastapi 0.110+ 兼容 Python 3.13）
+  "fastapi>=0.110,<1.0",
+  "uvicorn[standard]==0.24.0",
+  "python-multipart==0.0.6",
+  # 数据校验（pydantic 2.7+ 兼容 Python 3.13；2.14.x pydantic-core 在 3.13 上 build 失败）
+  "pydantic>=2.7,<3.0",
+  "pydantic-settings>=2.3,<3.0",
+  # ORM / 迁移（sqlalchemy 2.0.30+ / alembic 1.13+ 兼容 Python 3.13）
+  "sqlalchemy>=2.0.30,<3.0",
+  "alembic>=1.13,<2.0",
+  # 环境变量加载
+  "python-dotenv==1.0.0",
+  # 数据源（caret 约束大版本，避免字段突变）
+  "akshare>=1.12.0,<2.0.0",
+  "tushare>=1.4.0,<2.0.0",
+  # 数据处理（pandas 2.x 兼容 numpy <3.0；numpy 2.0 是 breaking change）
+  "pandas>=2.0.0,<3.0.0",
+  "numpy>=1.26.0,<3.0.0",
+  # 可选缓存（未配置 REDIS_URL 时使用内存缓存）
+  "redis>=5.0.0,<6.0.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=7.0,<10.0",
+  "httpx>=0.27,<1.0",
+  "ruff>=0.5,<2.0",
+  "basedpyright>=1.10,<2.0",
+]
+
+[tool.uv]
+# 本项目是应用（不发布到 PyPI），uv 只管理依赖与 lock
+package = false
+
 [tool.ruff]
 line-length = 110
 target-version = "py310"
