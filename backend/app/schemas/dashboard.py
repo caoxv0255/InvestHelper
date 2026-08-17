@@ -23,6 +23,16 @@ class PlatformComparison(BaseModel):
     annualized_rate: Decimal = Field(..., description="年化收益率")
 
 
+class CashFlowSummary(BaseModel):
+    """资金流水汇总（按币种）"""
+    currency: str = Field(..., description="币种")
+    total_deposit: Decimal = Field(..., description="累计入金")
+    total_withdraw: Decimal = Field(..., description="累计出金")
+    net_deposit: Decimal = Field(..., description="净入金")
+    real_return: Decimal = Field(..., description="真实收益(含已实现+未实现+分红)")
+    real_return_rate: Decimal = Field(..., description="真实收益率(基于净入金)")
+
+
 class DashboardSummary(BaseModel):
     """仪表盘汇总数据"""
     total_assets: Decimal = Field(..., description="总资产")
@@ -38,3 +48,4 @@ class DashboardSummary(BaseModel):
     holding_count: int = Field(..., description="持仓数量")
     deposit_count: int = Field(..., description="定期数量")
     data_status: dict = Field(default_factory=dict, description="收益数据状态（每个周期是否有快照）")
+    cash_flow_summary: list[CashFlowSummary] = Field(default_factory=list, description="资金流水汇总(按币种)")

@@ -7,12 +7,14 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.holdings import Holding
 from app.models.deposits import Deposit
+from app.models.transactions import Transaction
 from app.models.portfolio_snapshots import PortfolioSnapshot
 from app.schemas.dashboard import (
     DashboardSummary,
     PlatformDistribution,
     AssetTypeDistribution,
     PlatformComparison,
+    CashFlowSummary,
 )
 
 router = APIRouter()
@@ -177,6 +179,35 @@ async def get_dashboard_summary(db: Session = Depends(get_db)):
 
     platform_comparison.sort(key=lambda x: -x.annualized_rate)
 
+    # === 资金流水汇总（按币种） ===
+    cash_txs = db.query(Transaction).filter(Transaction.side.in_(["deposit", "withdraw"])).all()
+    cf_by_currency: dict[str, dict] = defaultdict(lambda: {
+        "total_deposit": Decimal("0"), "total_withdraw": Decimal("0"),
+    })
+    for tx in cash_txs:
+        amount = Decimal(tx.quantity) * Decimal(tx.price)
+        if tx.side == "deposit":
+            cf_by_currency[tx.currency]["total_deposit"] += amount
+        else:
+            cf_by_currency[tx.currency]["total_withdraw"] += amount
+
+    # 按净入金加权分摊总收益（多币种场景）
+    total_net_deposit = sum(cf["total_deposit"] - cf["total_withdraw"] for cf in cf_by_currency.values())
+    cash_flow_summary = []
+    for currency, cf in cf_by_currency.items():
+        net_deposit = cf["total_deposit"] - cf["total_withdraw"]
+        # 该币种分摊的真实收益（按净入金占比，分母取绝对值以正确处理净出金场景）
+        real_return = (total_profit * net_deposit / abs(total_net_deposit)) if total_net_deposit != 0 else Decimal("0")
+        real_return_rate = (real_return / net_deposit * 100) if net_deposit > 0 else Decimal("0")
+        cash_flow_summary.append(CashFlowSummary(
+            currency=currency,
+            total_deposit=cf["total_deposit"],
+            total_withdraw=cf["total_withdraw"],
+            net_deposit=net_deposit,
+            real_return=real_return,
+            real_return_rate=real_return_rate,
+        ))
+
     return DashboardSummary(
         total_assets=total_assets,
         total_profit=total_profit,
@@ -191,6 +222,7 @@ async def get_dashboard_summary(db: Session = Depends(get_db)):
         platform_comparison=platform_comparison,
         holding_count=holding_count,
         deposit_count=deposit_count,
+        cash_flow_summary=cash_flow_summary,
     )
 
 
