@@ -8,7 +8,54 @@
   font-size: 1.5rem;
   font-weight: 700;
   color: #1a1a2e;
+  margin-bottom: 0;
+}
+
+.page-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 1.5rem;
+}
+
+.btn-refresh-prices {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #667eea;
+  border-radius: 8px;
+  background: #f0f4ff;
+  color: #667eea;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-refresh-prices:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
+}
+
+.btn-refresh-prices:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.refresh-msg {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #555;
+  background: #f0f4ff;
+  border: 1px solid #d6e0ff;
+  margin-bottom: 1rem;
+}
+
+.refresh-msg.refreshing {
+  color: #667eea;
+  background: #f0f4ff;
 }
 
 /* 加载和错误状态 */
@@ -351,3 +398,32 @@
 .risk-strip-card { background: #f8fafc; border-radius: 8px; padding: .8rem; }
 .risk-strip-card span, .risk-strip-card small { display: block; color: #64748b; font-size: .82rem; }
 .risk-strip-card strong { display: block; margin: .3rem 0; font-size: 1.25rem; }
+
+/* 通用 section */
+.dashboard-section { margin-bottom: 1.25rem; }
+.section-header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: .75rem;
+}
+.section-header h2 { font-size: 1rem; font-weight: 600; color: #1a1a2e; margin: 0; }
+
+/* 资金流向 section */
+.cash-flow-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .75rem;
+}
+.cash-flow-card {
+  background: white; border-radius: 10px; padding: 1rem 1.1rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #f0f0f0;
+}
+.cf-header { margin-bottom: .6rem; }
+.cf-currency {
+  font-size: .95rem; font-weight: 700; color: #1a1a2e;
+  background: #f0f4ff; padding: .2rem .5rem; border-radius: 4px;
+}
+.cf-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .3rem 0; font-size: .85rem;
+}
+.cf-label { color: #888; }
+.cf-value { font-weight: 600; color: #333; }
+.cf-divider { height: 1px; background: #f0f0f0; margin: .4rem 0; }

@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import ReactECharts from 'echarts-for-react'
 import { TableSkeleton } from '../components/TableSkeleton'
 import { getDashboardSummary } from '../api/dashboard'
+import { refreshHoldingPrices, getRefreshPricesStatus } from '../api/holdings'
 import type { DashboardSummary } from '../types'
 import { getPortfolioSnapshot, type PortfolioSnapshot } from '../api/portfolio'
 import {
@@ -17,8 +18,12 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [snapshot, setSnapshot] = useState<PortfolioSnapshot | null>(null)
+  const [refreshStatus, setRefreshStatus] = useState<'idle' | 'running' | 'done' | 'failed'>('idle')
+  const [refreshMsg, setRefreshMsg] = useState('')
+  const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const fetchData = async () => {
+  /** 加载 Dashboard 数据（不等待行情刷新） */
+  const fetchData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -27,7 +32,6 @@ const Dashboard = () => {
       try {
         setSnapshot(await getPortfolioSnapshot())
       } catch {
-        // 交易流水尚未录入时不影响基础仪表盘
         setSnapshot(null)
       }
     } catch (err: any) {
@@ -35,10 +39,64 @@ const Dashboard = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
+  /** 触发异步刷新 + 轮询结果 */
+  const triggerRefresh = useCallback(async () => {
+    if (refreshStatus === 'running') return
+    setRefreshStatus('running')
+    setRefreshMsg('正在后台刷新实时行情...')
+    try {
+      await refreshHoldingPrices() // 立即返回
+      // 开始轮询
+      startPolling()
+    } catch {
+      setRefreshStatus('failed')
+      setRefreshMsg('行情刷新触发失败')
+    }
+  }, [refreshStatus])
+
+  const startPolling = useCallback(() => {
+    // 清理已有轮询
+    if (pollTimer.current) clearInterval(pollTimer.current)
+    let attempts = 0
+    pollTimer.current = setInterval(async () => {
+      attempts++
+      try {
+        const res = await getRefreshPricesStatus()
+        if (res.status === 'done' || res.status === 'failed') {
+          if (pollTimer.current) clearInterval(pollTimer.current)
+          pollTimer.current = null
+          setRefreshStatus(res.status)
+          if (res.status === 'done' && res.result) {
+            const r = res.result
+            setRefreshMsg(`行情刷新完成：${r.updated ?? 0} 条更新，${r.failed ?? 0} 条失败`)
+            // 刷新完成后重新拉取 Dashboard 数据
+            await fetchData()
+          } else {
+            setRefreshMsg(`行情刷新失败：${res.result?.error || '未知错误'}`)
+          }
+        } else if (attempts > 60) {
+          // 60 次（30秒）超时
+          if (pollTimer.current) clearInterval(pollTimer.current)
+          pollTimer.current = null
+          setRefreshStatus('failed')
+          setRefreshMsg('行情刷新超时')
+        }
+      } catch {
+        // 单次轮询失败，继续
+      }
+    }, 500) // 每 0.5 秒轮询一次
+  }, [fetchData])
+
+  /** 页面加载：先显示数据，后台触发刷新 */
   useEffect(() => {
     fetchData()
+    triggerRefresh()
+    return () => {
+      if (pollTimer.current) clearInterval(pollTimer.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const platformPieOption = {
@@ -202,7 +260,23 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-page">
-      <h1 className="page-title">资产概览</h1>
+      <div className="page-title-row">
+        <h1 className="page-title">资产概览</h1>
+        {data && (
+          <button
+            className="btn-refresh-prices"
+            onClick={triggerRefresh}
+            disabled={refreshStatus === 'running'}
+          >
+            {refreshStatus === 'running' ? '刷新中...' : '刷新行情'}
+          </button>
+        )}
+      </div>
+      {refreshMsg && (
+        <div className={`refresh-msg ${refreshStatus === 'running' ? 'refreshing' : ''}`}>
+          {refreshMsg}
+        </div>
+      )}
 
       {loading && !data ? (
         <div className="dashboard-skeleton">
@@ -218,7 +292,7 @@ const Dashboard = () => {
       {error && (
         <div className="error-message">
           {error}
-          <button className="btn-link" onClick={fetchData}>
+          <button className="btn-link" onClick={() => fetchData()}>
             重试
           </button>
         </div>
@@ -323,6 +397,28 @@ const Dashboard = () => {
             </div>
           </div>
 
+          {/* 资金流向 & 真实收益率 */}
+          {data.cash_flow_summary && data.cash_flow_summary.length > 0 && (
+            <div className="dashboard-section cash-flow-section">
+              <div className="section-header"><h2>资金流向</h2><span className="text-muted">基于资金流水计算真实收益率</span></div>
+              <div className="cash-flow-grid">
+                {data.cash_flow_summary.map((cf) => {
+                  const symbol = cf.currency === 'HKD' ? 'HK$' : cf.currency === 'USD' ? '$' : '¥'
+                  const hasData = cf.net_deposit > 0
+                  return <div key={cf.currency} className="cash-flow-card">
+                    <div className="cf-header"><span className="cf-currency">{symbol} {cf.currency}</span></div>
+                    <div className="cf-row"><span className="cf-label">累计入金</span><span className="cf-value positive">+{formatCurrency(cf.total_deposit)}</span></div>
+                    <div className="cf-row"><span className="cf-label">累计出金</span><span className="cf-value negative">-{formatCurrency(cf.total_withdraw)}</span></div>
+                    <div className="cf-row"><span className="cf-label">净入金</span><span className="cf-value" style={{ color: getProfitColor(cf.net_deposit) }}>{formatCurrency(cf.net_deposit)}</span></div>
+                    <div className="cf-divider"></div>
+                    <div className="cf-row"><span className="cf-label">真实收益</span><span className="cf-value" style={{ color: getProfitColor(cf.real_return) }}>{hasData ? `${cf.real_return >= 0 ? '+' : ''}${formatCurrency(cf.real_return)}` : 'N/A'}</span></div>
+                    <div className="cf-row"><span className="cf-label">真实收益率</span><span className="cf-value" style={{ color: getProfitColor(cf.real_return_rate) }}>{hasData ? formatPercent(cf.real_return_rate) : 'N/A'}</span></div>
+                  </div>
+                })}
+              </div>
+            </div>
+          )}
+
           {snapshot && snapshot.positions.length > 0 && (
             <div className="dashboard-section portfolio-risk-strip">
               <div className="section-header"><h2>流水重建组合风险</h2><span className="text-muted">按币种计算，未做汇率换算</span></div>
@@ -387,7 +483,7 @@ const Dashboard = () => {
                   <span className="action-icon">💰</span>
                   <span>添加定期</span>
                 </button>
-                <button className="action-btn" onClick={fetchData}>
+                <button className="action-btn" onClick={() => { fetchData(); triggerRefresh(); }}>
                   <span className="action-icon">🔄</span>
                   <span>刷新数据</span>
                 </button>

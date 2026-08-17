@@ -6,3 +6,27 @@
 .transaction-message { margin-left: .8rem; color: #475569; }
 @media (max-width: 1000px) { .transaction-form { grid-template-columns: repeat(3, minmax(120px, 1fr)); } }
 @media (max-width: 650px) { .transaction-form { grid-template-columns: repeat(2, minmax(120px, 1fr)); } }
+
+/* 资金汇总卡 */
+.cash-summary-card { border-left: 3px solid #2196f3; }
+.cash-summary-grid { display: flex; gap: 1rem; flex-wrap: wrap; }
+.cash-summary-item { display: flex; align-items: center; gap: 1.2rem; background: #f8fafc; border-radius: 8px; padding: .6rem 1rem; }
+.cash-currency { font-weight: 600; color: #334155; min-width: 50px; }
+.cash-field { display: flex; flex-direction: column; gap: 1px; }
+.cash-field em { font-style: normal; font-size: .72rem; color: #94a3b8; }
+.cash-field strong { font-size: .95rem; color: #1e293b; }
+.positive { color: #16a34a; }
+.negative { color: #dc2626; }
+
+/* Tab 分组 */
+.transaction-list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.transaction-list-header h2 { margin: 0; }
+.transaction-tab-group { display: flex; gap: .4rem; }
+.tab-btn { padding: .32rem .8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: transparent; color: #64748b; font-size: .8rem; cursor: pointer; transition: all .15s; }
+.tab-btn:hover { background: #f1f5f9; }
+.tab-btn.active { background: #2196f3; color: #fff; border-color: #2196f3; }
+
+/* Side badge */
+.side-badge { display: inline-block; padding: .1rem .45rem; border: 1px solid; border-radius: 4px; font-size: .78rem; line-height: 1.4; }
+.cash-tag { display: inline-block; padding: .1rem .45rem; background: #dbeafe; color: #2563eb; border-radius: 4px; font-size: .78rem; }
+.code-hint { color: #94a3b8; font-size: .8rem; }
