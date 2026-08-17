@@ -32,10 +32,16 @@ frontend/.vite/
 .trae/
 reasonix.toml
 *.code-workspace
+# 本地 agent / 桌面工具状态目录（不入库）
+.ai/
 
 # ===== 编辑器缓存 =====
 .venv/
 venv/
+
+# ===== 数据库备份（.gitignore 已 ignore *.db，但 *.bak 后缀不会匹配） =====
+*.bak
+*.bak_
 
 # ===== 日志 =====
 *.log
