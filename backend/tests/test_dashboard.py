@@ -101,3 +101,112 @@ def test_dashboard_summary_with_mixed_portfolio(client):
             client.delete(f"/api/holdings/{hid}")
         for did in created_deposit_ids:
             client.delete(f"/api/deposits/{did}")
+
+
+def test_dashboard_cash_flow_summary_basic(client):
+    """资金流水汇总：入金后买入持仓，验证 real_return 按净入金占比正确分摊"""
+    from datetime import date
+    today_str = date.today().isoformat()
+
+    # 1. 创建一笔入金流水 (deposit)
+    r = client.post("/api/transactions", json={
+        "account": "test", "asset_type": "cash", "code": "CNY", "name": "入金",
+        "side": "deposit", "trade_date": "2025-01-01",
+        "quantity": 100000, "price": 1, "fee": 0, "currency": "CNY",
+    })
+    assert r.status_code == 200, r.text
+
+    # 2. 创建一笔持仓
+    r = client.post("/api/holdings", json={
+        "platform": "alipay", "asset_type": "stock",
+        "code": "000001", "name": "平安银行",
+        "quantity": 1000, "cost_price": 10, "current_price": 11,
+        "industry": "银行", "buy_date": "2025-01-01", "notes": "测试",
+    })
+    assert r.status_code == 200, r.text
+    holding_id = r.json()["id"]
+
+    # 3. 创建一笔买入交易 (用于 portfolio snapshot 的利润计算)
+    r = client.post("/api/transactions", json={
+        "account": "test", "asset_type": "stock", "code": "000001", "name": "平安银行",
+        "side": "buy", "trade_date": "2025-01-01",
+        "quantity": 1000, "price": 10, "fee": 10, "currency": "CNY",
+    })
+    assert r.status_code == 200, r.text
+
+    try:
+        # 4. 调用仪表盘
+        r = client.get("/api/dashboard/summary")
+        assert r.status_code == 200, r.text
+        data = r.json()
+
+        # 5. 验证 cash_flow_summary
+        cfs = data["cash_flow_summary"]
+        assert len(cfs) == 1, f"应有 1 个币种的汇总, 实际: {len(cfs)}"
+        cny = cfs[0]
+        assert cny["currency"] == "CNY"
+        assert float(cny["total_deposit"]) == 100000
+        assert float(cny["total_withdraw"]) == 0
+        assert float(cny["net_deposit"]) == 100000
+        # 有持仓利润 (current_price > cost_price), real_return 应大于 0
+        assert float(cny["real_return"]) > 0, "持有盈利币种的 real_return 应大于 0"
+    finally:
+        client.delete(f"/api/holdings/{holding_id}")
+
+
+def test_dashboard_cash_flow_summary_net_withdraw(client):
+    """资金流水汇总：出金大于入金时 real_return 仍正确（回归：之前被 total_net_deposit>0 误判为0）"""
+    from datetime import date
+
+    # 1. 创建两笔入金流水（共 100000）
+    for side, qty in [("deposit", 60000), ("deposit", 40000)]:
+        r = client.post("/api/transactions", json={
+            "account": "test", "asset_type": "cash", "code": "CNY", "name": "入金",
+            "side": side, "trade_date": "2025-01-01",
+            "quantity": qty, "price": 1, "fee": 0, "currency": "CNY",
+        })
+        assert r.status_code == 200, r.text
+
+    # 2. 创建一笔出金（出金 120000，净入金 = -20000）
+    r = client.post("/api/transactions", json={
+        "account": "test", "asset_type": "cash", "code": "CNY", "name": "出金",
+        "side": "withdraw", "trade_date": "2025-03-01",
+        "quantity": 120000, "price": 1, "fee": 0, "currency": "CNY",
+    })
+    assert r.status_code == 200, r.text
+
+    # 3. 创建持仓和买入交易
+    r = client.post("/api/holdings", json={
+        "platform": "alipay", "asset_type": "stock",
+        "code": "000001", "name": "平安银行",
+        "quantity": 1000, "cost_price": 10, "current_price": 11,
+        "industry": "银行", "buy_date": "2025-01-01", "notes": "测试",
+    })
+    assert r.status_code == 200, r.text
+    holding_id = r.json()["id"]
+
+    r = client.post("/api/transactions", json={
+        "account": "test", "asset_type": "stock", "code": "000001", "name": "平安银行",
+        "side": "buy", "trade_date": "2025-01-01",
+        "quantity": 1000, "price": 10, "fee": 10, "currency": "CNY",
+    })
+    assert r.status_code == 200, r.text
+
+    try:
+        r = client.get("/api/dashboard/summary")
+        assert r.status_code == 200, r.text
+        data = r.json()
+
+        cfs = data["cash_flow_summary"]
+        assert len(cfs) == 1
+        cny = cfs[0]
+        assert cny["currency"] == "CNY"
+        assert float(cny["total_deposit"]) == 100000
+        assert float(cny["total_withdraw"]) == 120000
+        assert float(cny["net_deposit"]) == -20000
+
+        # 核心回归断言：出金大于入金时 real_return 不应被错误归零
+        assert float(cny["real_return"]) != 0, \
+            "BUG 回归：净出金 > 0 时 real_return 不应为 0"
+    finally:
+        client.delete(f"/api/holdings/{holding_id}")
