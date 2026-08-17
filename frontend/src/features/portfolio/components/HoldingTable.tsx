@@ -1,8 +1,8 @@
 /**
- * 持仓表格 + 筛选 + 止盈止损预警横幅
+ * HoldingTable — Phase C (Portfolio migration)
  *
- * Props drill 设计：父组件 (Portfolio.tsx) 负责状态管理 + 数据 fetch，
- * 本组件只负责渲染和回调转发。
+ * 持仓表格 + 筛选 + 止盈止损预警横幅. Migrated to <Button> + <Select>
+ * + <Badge> primitives. Signal rating → Badge variant via shared helper.
  */
 import type {
   Holding,
@@ -10,9 +10,12 @@ import type {
   PositionSuggestion,
   PositionAlertItem,
 } from '../../../types'
-import { SignalBadgeFromResult } from '../../../components/SignalBadge'
 import { TableSkeleton } from '../../../components/TableSkeleton'
 import { formatCurrency, formatPercent } from '../../../utils/format'
+import { Button } from '../../../components/ui/Button'
+import { Select } from '../../../components/ui/Select'
+import { Badge } from '../../../components/ui/Badge'
+import { ratingToVariant, ratingToText } from '../lib/ratingVariant'
 
 export interface HoldingTableProps {
   // 数据
@@ -41,19 +44,15 @@ export interface HoldingTableProps {
   onOpenSignal: (holding: Holding) => void
 }
 
-// ----- 内部纯函数（不依赖 React state）-----
+// ----- 内部纯函数 -----
 
 /**
- * toNum — 把后端 Numeric/Decimal 字段安全转成 number
- *
- * 后端 SQLAlchemy + Pydantic 把 Numeric 列序列化成 JSON string（如 "1500.000000"），
- * 而前端 TypeScript 类型仍声明 number。运行时如果直接 toFixed() / 算术运算就会崩。
- * 这里在消费侧做一次 coerce，是 fence post 修复，不动后端契约。
+ * toNum — fence post against backend returning decimal strings for Numeric.
  */
 const toNum = (v: number | string | null | undefined): number => {
   if (v === null || v === undefined || v === '') return 0
-  if (typeof v === 'string') return parseFloat(v)
-  return v
+  const n = typeof v === 'string' ? parseFloat(v) : v
+  return Number.isFinite(n) ? n : 0
 }
 
 function calculateProfit(holding: Holding): number {
@@ -71,13 +70,13 @@ function calculateMarketValue(holding: Holding): number {
   return toNum(holding.current_price) * toNum(holding.quantity)
 }
 
-function getPlatformLabel(platform: string): { text: string; className: string } {
-  const labels: Record<string, { text: string; className: string }> = {
-    alipay: { text: '支付宝', className: 'platform-tag alipay' },
-    cmb: { text: '招行', className: 'platform-tag cmb' },
-    ths: { text: '同花顺', className: 'platform-tag ths' },
+function getPlatformLabel(platform: string): string {
+  const labels: Record<string, string> = {
+    alipay: '支付宝',
+    cmb: '招行',
+    ths: '同花顺',
   }
-  return labels[platform] || { text: platform, className: 'platform-tag' }
+  return labels[platform] || platform
 }
 
 function getAssetTypeLabel(type: string): string {
@@ -87,6 +86,49 @@ function getAssetTypeLabel(type: string): string {
     deposit: '定期理财',
   }
   return labels[type] || type
+}
+
+const PLATFORM_OPTIONS = [
+  { value: '', label: '全部' },
+  { value: 'alipay', label: '支付宝' },
+  { value: 'cmb', label: '招行' },
+  { value: 'ths', label: '同花顺' },
+]
+
+const ASSET_TYPE_OPTIONS = [
+  { value: '', label: '全部' },
+  { value: 'fund', label: '基金' },
+  { value: 'stock', label: '股票' },
+  { value: 'deposit', label: '定期理财' },
+]
+
+// Local component: clickable signal badge (wraps Badge primitive)
+function ClickableSignalBadge({
+  signal,
+  onClick,
+}: {
+  signal: TechnicalSignal | undefined
+  onClick: () => void
+}) {
+  if (!signal) return <span className="text-muted">-</span>
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
+      style={{ cursor: 'pointer', display: 'inline-block' }}
+    >
+      <Badge variant={ratingToVariant(signal.rating)}>
+        {ratingToText(signal.rating)} {signal.score}
+      </Badge>
+    </span>
+  )
 }
 
 export const HoldingTable = ({
@@ -116,41 +158,31 @@ export const HoldingTable = ({
       <div className="filter-bar">
         <div className="filter-group">
           <label className="filter-label">平台：</label>
-          <select
-            className="filter-select"
+          <Select
+            options={PLATFORM_OPTIONS}
             value={platformFilter}
             onChange={(e) => onPlatformFilterChange(e.target.value)}
-          >
-            <option value="">全部</option>
-            <option value="alipay">支付宝</option>
-            <option value="cmb">招行</option>
-            <option value="ths">同花顺</option>
-          </select>
+          />
         </div>
         <div className="filter-group">
           <label className="filter-label">资产类型：</label>
-          <select
-            className="filter-select"
+          <Select
+            options={ASSET_TYPE_OPTIONS}
             value={assetTypeFilter}
             onChange={(e) => onAssetTypeFilterChange(e.target.value)}
-          >
-            <option value="">全部</option>
-            <option value="fund">基金</option>
-            <option value="stock">股票</option>
-            <option value="deposit">定期理财</option>
-          </select>
+          />
         </div>
         <div className="filter-spacer"></div>
-        <button
-          className="btn btn-secondary"
+        <Button
+          variant="secondary"
           onClick={onOpenSuggestions}
           disabled={suggestionsLoading}
         >
           {suggestionsLoading ? '计算中...' : '仓位建议'}
-        </button>
-        <button className="btn btn-primary" onClick={onAddHolding}>
+        </Button>
+        <Button variant="primary" onClick={onAddHolding}>
           + 添加持仓
-        </button>
+        </Button>
       </div>
 
       {/* 止盈止损预警 */}
@@ -165,16 +197,16 @@ export const HoldingTable = ({
         </div>
       )}
 
-      {/* 加载状态 — skeleton placeholder (10 columns x 5 rows) */}
-      {holdingsLoading && (
-        <TableSkeleton rows={5} columns={10} />
-      )}
+      {/* 加载状态 — skeleton placeholder */}
+      {holdingsLoading && <TableSkeleton rows={5} columns={10} />}
 
       {/* 错误提示 */}
       {holdingsError && (
         <div className="error-message">
-          {holdingsError}
-          <button className="btn-link" onClick={onRefresh}>重试</button>
+          <span>{holdingsError}</span>
+          <Button variant="ghost" onClick={onRefresh}>
+            重试
+          </Button>
         </div>
       )}
 
@@ -212,7 +244,6 @@ export const HoldingTable = ({
                   const profit = calculateProfit(holding)
                   const profitPercent = calculateProfitPercent(holding)
                   const marketValue = calculateMarketValue(holding)
-                  const platformInfo = getPlatformLabel(holding.platform)
                   const isPositive = profit >= 0
                   const suggestion = positionSuggestions.find(
                     (s) => s.holding_id === holding.id,
@@ -221,14 +252,13 @@ export const HoldingTable = ({
                     (a) => a.holding_id === holding.id,
                   )
                   const rowClassName = alert ? 'row-alert' : ''
+                  const profitColor = isPositive
+                    ? 'var(--color-profit-up)'
+                    : 'var(--color-profit-down)'
 
                   return (
                     <tr key={holding.id} className={rowClassName}>
-                      <td>
-                        <span className={platformInfo.className}>
-                          {platformInfo.text}
-                        </span>
-                      </td>
+                      <td>{getPlatformLabel(holding.platform)}</td>
                       <td>{getAssetTypeLabel(holding.asset_type)}</td>
                       <td className="code-cell">{holding.code}</td>
                       <td className="name-cell">{holding.name}</td>
@@ -238,21 +268,20 @@ export const HoldingTable = ({
                         {holding.current_price ? toNum(holding.current_price).toFixed(4) : '-'}
                       </td>
                       <td className="text-right">{formatCurrency(marketValue)}</td>
-                      <td className={`text-right ${isPositive ? 'profit-positive' : 'profit-negative'}`}>
-                        {isPositive ? '+' : ''}{formatCurrency(profit)}
+                      <td className="text-right" style={{ color: profitColor }}>
+                        {isPositive ? '+' : ''}
+                        {formatCurrency(profit)}
                       </td>
-                      <td className={`text-right ${isPositive ? 'profit-positive' : 'profit-negative'}`}>
+                      <td className="text-right" style={{ color: profitColor }}>
                         {formatPercent(profitPercent)}
                       </td>
                       <td className="text-center">
                         {signalsLoading && !signalMap[holding.code] ? (
-                          <span className="signal-badge neutral small">加载中</span>
+                          <Badge variant="neutral">加载中</Badge>
                         ) : (
-                          <SignalBadgeFromResult
+                          <ClickableSignalBadge
                             signal={signalMap[holding.code]}
-                            clickable={!!signalMap[holding.code]}
                             onClick={() => onOpenSignal(holding)}
-                            size="small"
                           />
                         )}
                       </td>
@@ -260,42 +289,44 @@ export const HoldingTable = ({
                         {suggestionsLoading || !suggestion ? (
                           <span className="text-muted">-</span>
                         ) : (
-                          <span
-                            className="signal-badge small"
-                            title={suggestion.reason}
-                          >
+                          <Badge variant="info" title={suggestion.reason}>
                             {formatPercent(suggestion.suggested_ratio * 100)}
-                          </span>
+                          </Badge>
                         )}
                       </td>
                       <td className="text-center">
-                        <button
-                          className="btn-link btn-edit"
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => onOpenTpSl(holding)}
                           title={alert ? alert.message : '设置止盈止损'}
                         >
                           {alert ? (
-                            <span className="text-alert">已触发</span>
+                            <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>
+                              已触发
+                            </span>
                           ) : holding.take_profit_price || holding.stop_loss_price ? (
                             '已设置'
                           ) : (
                             '未设置'
                           )}
-                        </button>
+                        </Button>
                       </td>
                       <td className="text-center">
-                        <button
-                          className="btn-link btn-edit"
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => onEditHolding(holding)}
                         >
                           编辑
-                        </button>
-                        <button
-                          className="btn-link btn-delete"
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => onDeleteHolding(holding.id, holding.name)}
                         >
                           删除
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   )

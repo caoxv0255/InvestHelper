@@ -1,6 +1,12 @@
 /**
- * 删除确认弹窗（持仓/定期通用）
+ * DeleteConfirmModal — Phase C (Portfolio migration)
+ *
+ * 删除确认弹窗（持仓/定期通用）。Migrated to <Modal> + <Button> primitives.
+ * State ownership: parent owns visible + submitting + onCancel/onConfirm.
  */
+import { Modal } from '../../../components/ui/Modal'
+import { Button } from '../../../components/ui/Button'
+
 export interface DeleteTarget {
   type: 'holding' | 'deposit'
   id: number
@@ -23,32 +29,34 @@ export const DeleteConfirmModal = ({
   onCancel,
   onConfirm,
 }: DeleteConfirmModalProps) => {
-  if (!visible) return null
-
-  // submitting 时禁止 overlay click 关闭 modal，避免误触中断请求
-  const handleOverlayClick = () => {
-    if (submitting) return
-    onCancel()
-  }
-
   return (
-    <div className="modal-overlay" onClick={handleOverlayClick}>
-      <div className="modal-content modal-small" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>确认删除</h3>
-          <button className="modal-close" onClick={onCancel} disabled={submitting}>×</button>
-        </div>
-        <div className="modal-body">
-          <p>确定要删除「{target?.name}」吗？</p>
-          <p className="text-warning">此操作不可恢复，请谨慎操作。</p>
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={onCancel} disabled={submitting}>取消</button>
-          <button className="btn btn-danger" onClick={onConfirm} disabled={submitting}>
+    <Modal
+      visible={visible}
+      onClose={onCancel}
+      title="确认删除"
+      size="sm"
+      dismissible={!submitting}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onCancel} disabled={submitting}>
+            取消
+          </Button>
+          <Button variant="danger" onClick={onConfirm} disabled={submitting}>
             {submitting ? '删除中...' : '删除'}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </>
+      }
+    >
+      <p style={{ margin: 0 }}>确定要删除「{target?.name}」吗？</p>
+      <p
+        style={{
+          margin: 'var(--space-2) 0 0 0',
+          color: 'var(--color-warning)',
+          fontSize: 'var(--font-sm)',
+        }}
+      >
+        此操作不可恢复，请谨慎操作。
+      </p>
+    </Modal>
   )
 }

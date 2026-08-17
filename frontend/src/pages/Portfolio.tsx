@@ -1,14 +1,15 @@
 /**
- * Portfolio 页面入口
+ * Portfolio 页面入口 — Phase C (Portfolio migration)
  *
- * 状态管理 + 数据 fetch + 弹窗处理。
- * 表格 / 简单表单 / 删除确认 / FormModal 已抽到 features/portfolio/components/；
- * FormModal 内部用 useForm + validate 自管状态，本页只剩"打开/关闭/提交后调 API"。
+ * State ownership + data fetch + modal handlers unchanged.
+ * Page chrome migrated: <div.page-container> + <h1.page-title> →
+ * <PageHeader> primitive.
  *
- * 本地仍留的 useState：
- *   - activeTab / 3 个 filter（页面内 UI 输入）
- *   - auxiliaryError（横跨多个资源的统一错误条）
- *   - tpSlForm + tpSlLoading（TpSlModal 专有交互态）
+ * State summary:
+ *   - activeTab / 3 filters — usePortfolioData owns
+ *   - auxiliaryError — usePortfolioData owns
+ *   - tpSlForm / tpSlLoading — TpSlModal interaction state
+ *   - 4 submitting flags — page-owned, passed to modals as props
  */
 import { useState } from 'react'
 import {
@@ -38,6 +39,7 @@ import {
 import { SignalDetailModal } from '../features/portfolio/components/SignalDetailModal'
 import { TpSlModal } from '../features/portfolio/components/TpSlModal'
 import { SuggestionsModal } from '../features/portfolio/components/SuggestionsModal'
+import { PageHeader } from '../components/ui/PageHeader'
 import '../styles/Portfolio.css'
 
 const Portfolio = () => {
@@ -46,7 +48,7 @@ const Portfolio = () => {
   const _title = '持仓管理'
   useDocumentTitle(_title)
 
-  // ===== Data ownership (Phase 2A: 接入 usePortfolioData) =====
+  // ===== Data ownership (Phase 2A) =====
   const {
     activeTab,
     setActiveTab,
@@ -79,7 +81,7 @@ const Portfolio = () => {
     stop_loss_price: '',
   })
   const [tpSlLoading, setTpSlLoading] = useState(false)
-  // ===== 持仓表单 submitting state（驱动 modal 按钮 disable + loading 文案） =====
+  // ===== 持仓表单 submitting state =====
   const [holdingSubmitting, setHoldingSubmitting] = useState(false)
   // ===== 定期表单 submitting state =====
   const [depositSubmitting, setDepositSubmitting] = useState(false)
@@ -87,7 +89,7 @@ const Portfolio = () => {
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
 
   const toast = useToast()
-  // ===== Action ownership (Phase 2B: 接入 usePortfolioActions) =====
+  // ===== Action ownership (Phase 2B) =====
   const actions = usePortfolioActions({
     refetchHoldings: holdings.refetch,
     refetchDeposits: deposits.refetch,
@@ -98,8 +100,7 @@ const Portfolio = () => {
     onSuccess: (msg) => toast.show(msg, 'success'),
   })
 
-  // thin wrappers — 保持 JSX 现有 onSubmit/onConfirm 签名 1:1，
-  // 让 hook 不读 page-owned modal state
+  // thin wrappers — 保持 JSX 现有 onSubmit/onConfirm 签名 1:1
   const submitHoldingForm = async (values: HoldingCreate) => {
     if (holdingSubmitting) return
     setHoldingSubmitting(true)
@@ -128,7 +129,7 @@ const Portfolio = () => {
     }
   }
 
-  // openDeleteModal 仍是 page 业务（"打开 modal"是 UI 触发，不是 mutation）
+  // openDeleteModal 仍是 page 业务
   const openDeleteModal = (type: 'holding' | 'deposit', id: number, name: string) => {
     deleteModal.open({ type, id, name })
   }
@@ -165,7 +166,7 @@ const Portfolio = () => {
   const submitTpSlForm = async () => {
     const editing = tpSlModal.data
     if (!editing) return
-    if (tpSlLoading) return  // re-entrancy guard（与 autoCalculateTpSl 共享 loading state）
+    if (tpSlLoading) return
 
     const takeProfitPrice = tpSlForm.take_profit_price
       ? parseFloat(tpSlForm.take_profit_price)
@@ -207,8 +208,9 @@ const Portfolio = () => {
   }
 
   return (
-    <div className="page-container">
-      <h1 className="page-title">持仓管理</h1>
+    <>
+      <PageHeader title="持仓管理" />
+
       {auxiliaryError && (
         <div className="aux-error-banner" role="alert">
           <span>⚠️ {auxiliaryError}</span>
@@ -325,7 +327,7 @@ const Portfolio = () => {
         loading={positionSuggestions.loading}
         onClose={suggestionsModal.close}
       />
-    </div>
+    </>
   )
 }
 

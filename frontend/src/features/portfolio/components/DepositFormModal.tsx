@@ -1,12 +1,20 @@
 /**
- * 定期理财新增/编辑表单弹窗
+ * DepositFormModal — Phase C (Portfolio migration)
  *
- * 表单状态、错误、校验、预期收益计算全部内化（useForm）。
- * 父组件只需传 visible + editing + onCancel + onSubmit(values)。
+ * 定期理财新增/编辑表单弹窗. Migrated to <Modal> + <Input> + <Select> + <Button>
+ * primitives. All Phase 1 patches preserved:
+ *   - useForm + focusFirstError (validation + first-error focus)
+ *   - useAutoFocus (modal open → first input auto-focused)
+ *   - calcExpectedReturn auto-calc on field blur
+ *   - Enter 提交 / Esc 取消
  */
-import { useEffect } from 'react'
+import { useEffect, type FormEvent, type KeyboardEvent } from 'react'
 import type { Deposit, DepositCreate } from '../../../types'
 import { useForm, focusFirstError, useAutoFocus } from '../../../hooks'
+import { Modal } from '../../../components/ui/Modal'
+import { Input } from '../../../components/ui/Input'
+import { Select } from '../../../components/ui/Select'
+import { Button } from '../../../components/ui/Button'
 
 const initialDeposit = (today: string): DepositCreate => ({
   bank: 'cmb',
@@ -19,6 +27,19 @@ const initialDeposit = (today: string): DepositCreate => ({
   status: 'active',
   notes: null,
 })
+
+const BANK_OPTIONS = [
+  { value: 'cmb', label: '招商银行' },
+  { value: 'icbc', label: '工商银行' },
+  { value: 'ccb', label: '建设银行' },
+  { value: 'abc', label: '农业银行' },
+  { value: 'boc', label: '中国银行' },
+]
+
+const STATUS_OPTIONS = [
+  { value: 'active', label: '持有中' },
+  { value: 'matured', label: '已到期' },
+]
 
 const depositFromEditing = (d: Deposit): DepositCreate => ({
   bank: d.bank,
@@ -73,6 +94,12 @@ export interface DepositFormModalProps {
   onSubmit: (values: DepositCreate) => void
 }
 
+const parseDecimal = (v: string): number => {
+  if (v === '' || v === '.') return 0
+  const n = parseFloat(v)
+  return Number.isFinite(n) ? n : 0
+}
+
 export const DepositFormModal = ({
   visible,
   editing,
@@ -91,14 +118,6 @@ export const DepositFormModal = ({
   // modal 打开时 auto-focus 第一个可编辑元素
   useAutoFocus(visible)
 
-  if (!visible) return null
-
-  // submitting 时禁止 overlay click 关闭 modal，避免误触中断请求
-  const handleOverlayClick = () => {
-    if (submitting) return
-    onCancel()
-  }
-
   const { values, errors, setField } = form
 
   const handleSubmit = () => {
@@ -111,17 +130,16 @@ export const DepositFormModal = ({
     onSubmit(values)
   }
 
-  // Enter 提交，Esc 取消（input 元素触发；submitting 时禁用）
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+  const handleFormKeyDown = (e: KeyboardEvent<HTMLFormElement>) => {
     if (e.key === 'Escape') {
       e.preventDefault()
       if (!submitting) onCancel()
-    } else if (e.key === 'Enter' && e.target instanceof HTMLElement) {
-      if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return
-      if (e.target instanceof HTMLInputElement && e.target.type === 'button') return
-      e.preventDefault()
-      handleSubmit()
     }
+  }
+
+  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    handleSubmit()
   }
 
   const autoCalculate = () => {
@@ -131,172 +149,123 @@ export const DepositFormModal = ({
     }
   }
 
+  const rowStyle = { display: 'flex', gap: 'var(--space-3)' }
+
   return (
-    <div className="modal-overlay" onClick={handleOverlayClick}>
-      <form className="modal-content" onKeyDown={handleKeyDown} onSubmit={(e) => { e.preventDefault(); handleSubmit() }}>
-        <div className="modal-header">
-          <h3>{editing ? '编辑定期理财' : '添加定期理财'}</h3>
-          <button className="modal-close" onClick={onCancel}>×</button>
+    <Modal
+      visible={visible}
+      onClose={onCancel}
+      title={editing ? '编辑定期理财' : '添加定期理财'}
+      size="md"
+      dismissible={!submitting}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onCancel} disabled={submitting}>
+            取消
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
+            {submitting
+              ? editing
+                ? '保存中...'
+                : '创建中...'
+              : editing
+                ? '保存'
+                : '创建'}
+          </Button>
+        </>
+      }
+    >
+      <form
+        onSubmit={handleFormSubmit}
+        onKeyDown={handleFormKeyDown}
+        style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}
+      >
+        <div style={rowStyle}>
+          <Select
+            label="银行 *"
+            options={BANK_OPTIONS}
+            value={values.bank}
+            onChange={(e) => setField('bank', e.target.value)}
+            error={errors.bank}
+          />
+          <Input
+            label="产品名称 *"
+            type="text"
+            value={values.product_name}
+            onChange={(e) => setField('product_name', e.target.value)}
+            placeholder="请输入产品名称"
+            error={errors.product_name}
+          />
         </div>
-        <div className="modal-body">
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">银行 <span className="required">*</span></label>
-              <select
-                className="form-input"
-                value={values.bank}
-                onChange={(e) => setField('bank', e.target.value)}
-                data-field="bank"
-              >
-                <option value="cmb">招商银行</option>
-                <option value="icbc">工商银行</option>
-                <option value="ccb">建设银行</option>
-                <option value="abc">农业银行</option>
-                <option value="boc">中国银行</option>
-              </select>
-              {errors.bank && <div className="form-error">{errors.bank}</div>}
-            </div>
-            <div className="form-group">
-              <label className="form-label">产品名称 <span className="required">*</span></label>
-              <input
-                type="text"
-                className="form-input"
-                value={values.product_name}
-                onChange={(e) => setField('product_name', e.target.value)}
-                data-field="product_name"
-                placeholder="请输入产品名称"
-              />
-              {errors.product_name && <div className="form-error">{errors.product_name}</div>}
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">本金 <span className="required">*</span></label>
-              <input
-                type="text"
-                inputMode="decimal"
-                className="form-input"
-                value={values.principal === 0 ? '' : String(values.principal)}
-                onChange={(e) => {
-                  const v = e.target.value
-                  if (v === '' || v === '.') {
-                    setField('principal', 0)
-                  } else {
-                    const n = parseFloat(v)
-                    setField('principal', Number.isFinite(n) ? n : 0)
-                  }
-                }}
-                onBlur={autoCalculate}
-                placeholder="0.00"
-                data-field="principal"
-              />
-              {errors.principal && <div className="form-error">{errors.principal}</div>}
-            </div>
-            <div className="form-group">
-              <label className="form-label">年化利率(%) <span className="required">*</span></label>
-              <input
-                type="text"
-                inputMode="decimal"
-                className="form-input"
-                value={values.annual_rate === 0 ? '' : String(values.annual_rate)}
-                onChange={(e) => {
-                  const v = e.target.value
-                  if (v === '' || v === '.') {
-                    setField('annual_rate', 0)
-                  } else {
-                    const n = parseFloat(v)
-                    setField('annual_rate', Number.isFinite(n) ? n : 0)
-                  }
-                }}
-                onBlur={autoCalculate}
-                placeholder="0.00"
-                data-field="annual_rate"
-              />
-              {errors.annual_rate && <div className="form-error">{errors.annual_rate}</div>}
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">起息日 <span className="required">*</span></label>
-              <input
-                type="date"
-                className="form-input"
-                value={values.start_date}
-                onChange={(e) => setField('start_date', e.target.value)}
-                data-field="start_date"
-                onBlur={autoCalculate}
-              />
-              {errors.start_date && <div className="form-error">{errors.start_date}</div>}
-            </div>
-            <div className="form-group">
-              <label className="form-label">到期日 <span className="required">*</span></label>
-              <input
-                type="date"
-                className="form-input"
-                value={values.maturity_date}
-                onChange={(e) => setField('maturity_date', e.target.value)}
-                data-field="maturity_date"
-                onBlur={autoCalculate}
-              />
-              {errors.maturity_date && <div className="form-error">{errors.maturity_date}</div>}
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">预期收益</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                className="form-input"
-                value={values.expected_return === 0 ? '' : String(values.expected_return)}
-                onChange={(e) => {
-                  const v = e.target.value
-                  if (v === '' || v === '.') {
-                    setField('expected_return', 0)
-                  } else {
-                    const n = parseFloat(v)
-                    setField('expected_return', Number.isFinite(n) ? n : 0)
-                  }
-                }}
-                placeholder="0.00"
-                data-field="expected_return"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">状态</label>
-              <select
-                className="form-input"
-                value={values.status}
-                onChange={(e) => setField('status', e.target.value)}
-                data-field="status"
-              >
-                <option value="active">持有中</option>
-                <option value="matured">已到期</option>
-              </select>
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group form-group-full">
-              <label className="form-label">备注</label>
-              <input
-                type="text"
-                className="form-input"
-                value={values.notes ?? ''}
-                onChange={(e) => setField('notes', e.target.value || null)}
-                data-field="notes"
-                placeholder="可选"
-              />
-            </div>
-          </div>
+
+        <div style={rowStyle}>
+          <Input
+            label="本金 *"
+            type="text"
+            inputMode="decimal"
+            value={values.principal === 0 ? '' : String(values.principal)}
+            onChange={(e) => setField('principal', parseDecimal(e.target.value))}
+            onBlur={autoCalculate}
+            placeholder="0.00"
+            error={errors.principal}
+          />
+          <Input
+            label="年化利率(%) *"
+            type="text"
+            inputMode="decimal"
+            value={values.annual_rate === 0 ? '' : String(values.annual_rate)}
+            onChange={(e) => setField('annual_rate', parseDecimal(e.target.value))}
+            onBlur={autoCalculate}
+            placeholder="0.00"
+            error={errors.annual_rate}
+          />
         </div>
-        <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={onCancel} disabled={submitting}>取消</button>
-          <button className="btn btn-primary" onClick={handleSubmit} disabled={submitting}>
-            {submitting ? (editing ? '保存中...' : '创建中...') : (editing ? '保存' : '创建')}
-          </button>
+
+        <div style={rowStyle}>
+          <Input
+            label="起息日 *"
+            type="date"
+            value={values.start_date}
+            onChange={(e) => setField('start_date', e.target.value)}
+            onBlur={autoCalculate}
+            error={errors.start_date}
+          />
+          <Input
+            label="到期日 *"
+            type="date"
+            value={values.maturity_date}
+            onChange={(e) => setField('maturity_date', e.target.value)}
+            onBlur={autoCalculate}
+            error={errors.maturity_date}
+          />
         </div>
+
+        <div style={rowStyle}>
+          <Input
+            label="预期收益"
+            type="text"
+            inputMode="decimal"
+            value={values.expected_return === 0 ? '' : String(values.expected_return)}
+            onChange={(e) => setField('expected_return', parseDecimal(e.target.value))}
+            placeholder="0.00"
+          />
+          <Select
+            label="状态"
+            options={STATUS_OPTIONS}
+            value={values.status}
+            onChange={(e) => setField('status', e.target.value)}
+          />
+        </div>
+
+        <Input
+          label="备注"
+          type="text"
+          value={values.notes ?? ''}
+          onChange={(e) => setField('notes', e.target.value || null)}
+          placeholder="可选"
+        />
       </form>
-    </div>
+    </Modal>
   )
 }
 

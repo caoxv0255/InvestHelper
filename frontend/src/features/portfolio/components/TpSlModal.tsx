@@ -1,10 +1,13 @@
 /**
- * 止盈止损设置弹窗
+ * TpSlModal — Phase C (Portfolio migration)
  *
- * parent 负责：管理 holding/form/loading 状态、API 调用、提交后刷新。
- * modal 只负责渲染 + 表单字段更新回调。
+ * 止盈止损设置弹窗. Migrated to <Modal> + <Input> + <Button> primitives.
+ * Internal useState for form + loading preserved (parent owns API calls).
  */
 import type { Holding } from '../../../types'
+import { Modal } from '../../../components/ui/Modal'
+import { Input } from '../../../components/ui/Input'
+import { Button } from '../../../components/ui/Button'
 
 export interface TpSlFormState {
   take_profit_price: string
@@ -22,6 +25,8 @@ export interface TpSlModalProps {
   onClose: () => void
 }
 
+const formRowStyle = { display: 'flex', gap: 'var(--space-3)' }
+
 export const TpSlModal = ({
   visible,
   holding,
@@ -32,91 +37,83 @@ export const TpSlModal = ({
   onSubmit,
   onClose,
 }: TpSlModalProps) => {
-  if (!visible || !holding) return null
-
-  // loading 时禁止 overlay click 关闭 modal，避免误触中断请求
-  const handleOverlayClick = () => {
-    if (loading) return
-    onClose()
-  }
-
   return (
-    <div className="modal-overlay" onClick={handleOverlayClick}>
-      <div className="modal-content modal-small" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>设置止盈止损 - {holding.name}</h3>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
-        <div className="modal-body">
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">成本价</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                className="form-input"
-                value={String(holding.cost_price)}
-                disabled
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">当前价</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                className="form-input"
-                value={String(holding.current_price ?? holding.cost_price)}
-                disabled
-              />
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">止盈价</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                className="form-input"
-                value={form.take_profit_price}
-                onChange={(e) =>
-                  onChange({ ...form, take_profit_price: e.target.value })
-                }
-                placeholder="高于当前价"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">止损价</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                className="form-input"
-                value={form.stop_loss_price}
-                onChange={(e) =>
-                  onChange({ ...form, stop_loss_price: e.target.value })
-                }
-                placeholder="低于当前价"
-              />
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group form-group-full">
-              <button
-                className="btn btn-secondary"
-                onClick={onAutoCalculate}
-                disabled={loading}
-              >
-                {loading ? '计算中...' : '基于 ATR 自动计算'}
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={onClose} disabled={loading}>取消</button>
-          <button className="btn btn-primary" onClick={onSubmit} disabled={loading}>
+    <Modal
+      visible={visible && !!holding}
+      onClose={onClose}
+      title={holding ? `设置止盈止损 - ${holding.name}` : '设置止盈止损'}
+      size="md"
+      dismissible={!loading}
+      footer={
+        <>
+          <Button
+            variant="secondary"
+            onClick={onClose}
+            disabled={loading}
+          >
+            取消
+          </Button>
+          <Button
+            variant="primary"
+            onClick={onSubmit}
+            disabled={loading}
+          >
             {loading ? '保存中...' : '保存'}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </>
+      }
+    >
+      {holding && (
+        <>
+          <div style={formRowStyle}>
+            <Input
+              label="成本价"
+              type="text"
+              inputMode="decimal"
+              value={String(holding.cost_price)}
+              disabled
+            />
+            <Input
+              label="当前价"
+              type="text"
+              inputMode="decimal"
+              value={String(holding.current_price ?? holding.cost_price)}
+              disabled
+            />
+          </div>
+          <div style={{ ...formRowStyle, marginTop: 'var(--space-3)' }}>
+            <Input
+              label="止盈价"
+              type="text"
+              inputMode="decimal"
+              value={form.take_profit_price}
+              onChange={(e) =>
+                onChange({ ...form, take_profit_price: e.target.value })
+              }
+              placeholder="高于当前价"
+            />
+            <Input
+              label="止损价"
+              type="text"
+              inputMode="decimal"
+              value={form.stop_loss_price}
+              onChange={(e) =>
+                onChange({ ...form, stop_loss_price: e.target.value })
+              }
+              placeholder="低于当前价"
+            />
+          </div>
+          <div style={{ marginTop: 'var(--space-3)' }}>
+            <Button
+              variant="ghost"
+              onClick={onAutoCalculate}
+              disabled={loading}
+            >
+              {loading ? '计算中...' : '基于 ATR 自动计算'}
+            </Button>
+          </div>
+        </>
+      )}
+    </Modal>
   )
 }

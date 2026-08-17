@@ -1,23 +1,14 @@
 /**
- * 定期理财表格 + 筛选
+ * DepositTable — Phase C (Portfolio migration)
+ *
+ * 定期理财表格 + 筛选. Migrated to <Button> + <Select> + <Badge> primitives.
  */
 import type { Deposit } from '../../../types'
 import { formatCurrency, formatDate } from '../../../utils/format'
 import { TableSkeleton } from '../../../components/TableSkeleton'
-
-/**
- * toNum — fence post against backend returning decimal strings for Numeric columns.
- *
- * 与 HoldingTable 的 toNum 含义一致：后端 SQLAlchemy + Pydantic 把 Numeric 序列化成
- * JSON string（如 "0.0210"），前端 TypeScript 仍声明 number。运行时直接调
- * toFixed / toLocaleString 就会崩。这里在消费侧做一次 coerce，不动后端契约。
- */
-const toNum = (value: unknown): number => {
-  if (value === null || value === undefined || value === '') return 0
-  if (typeof value === 'number') return value
-  const n = parseFloat(String(value))
-  return Number.isFinite(n) ? n : 0
-}
+import { Button } from '../../../components/ui/Button'
+import { Select } from '../../../components/ui/Select'
+import { Badge, type BadgeVariant } from '../../../components/ui/Badge'
 
 export interface DepositTableProps {
   deposits: Deposit[]
@@ -31,6 +22,16 @@ export interface DepositTableProps {
   onDeleteDeposit: (id: number, name: string) => void
 }
 
+/**
+ * toNum — fence post against backend returning decimal strings.
+ */
+const toNum = (value: unknown): number => {
+  if (value === null || value === undefined || value === '') return 0
+  if (typeof value === 'number') return value
+  const n = parseFloat(String(value))
+  return Number.isFinite(n) ? n : 0
+}
+
 function getRemainingDays(maturityDate: string): number {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -40,13 +41,35 @@ function getRemainingDays(maturityDate: string): number {
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }
 
-function getStatusLabel(status: string): { text: string; className: string } {
-  const labels: Record<string, { text: string; className: string }> = {
-    active: { text: '持有中', className: 'status-tag active' },
-    matured: { text: '已到期', className: 'status-tag matured' },
+// deposit.status → Badge variant
+// Default fallback 'neutral' to avoid runtime error if backend adds new status
+function depositStatusToVariant(status: string): BadgeVariant {
+  switch (status) {
+    case 'active':
+      return 'success'
+    case 'matured':
+      return 'neutral'
+    default:
+      return 'neutral'
   }
-  return labels[status] || { text: status, className: 'status-tag' }
 }
+
+function depositStatusToText(status: string): string {
+  switch (status) {
+    case 'active':
+      return '持有中'
+    case 'matured':
+      return '已到期'
+    default:
+      return status
+  }
+}
+
+const STATUS_OPTIONS = [
+  { value: '', label: '全部' },
+  { value: 'active', label: '持有中' },
+  { value: 'matured', label: '已到期' },
+]
 
 export const DepositTable = ({
   deposits,
@@ -65,32 +88,28 @@ export const DepositTable = ({
       <div className="filter-bar">
         <div className="filter-group">
           <label className="filter-label">状态：</label>
-          <select
-            className="filter-select"
+          <Select
+            options={STATUS_OPTIONS}
             value={statusFilter}
             onChange={(e) => onStatusFilterChange(e.target.value)}
-          >
-            <option value="">全部</option>
-            <option value="active">持有中</option>
-            <option value="matured">已到期</option>
-          </select>
+          />
         </div>
         <div className="filter-spacer"></div>
-        <button className="btn btn-primary" onClick={onAddDeposit}>
+        <Button variant="primary" onClick={onAddDeposit}>
           + 添加定期
-        </button>
+        </Button>
       </div>
 
-      {/* 加载状态 — skeleton placeholder (9 columns x 3 rows) */}
-      {depositsLoading && (
-        <TableSkeleton rows={3} columns={9} />
-      )}
+      {/* 加载状态 */}
+      {depositsLoading && <TableSkeleton rows={3} columns={9} />}
 
       {/* 错误提示 */}
       {depositsError && (
         <div className="error-message">
-          {depositsError}
-          <button className="btn-link" onClick={onRefresh}>重试</button>
+          <span>{depositsError}</span>
+          <Button variant="ghost" onClick={onRefresh}>
+            重试
+          </Button>
         </div>
       )}
 
@@ -121,7 +140,6 @@ export const DepositTable = ({
               ) : (
                 deposits.map((deposit) => {
                   const remainingDays = getRemainingDays(deposit.maturity_date)
-                  const statusInfo = getStatusLabel(deposit.status)
                   let rowClassName = ''
                   if (deposit.status === 'matured' || remainingDays < 0) {
                     rowClassName = 'row-matured'
@@ -136,30 +154,35 @@ export const DepositTable = ({
                       <td className="text-right">{toNum(deposit.annual_rate).toFixed(2)}%</td>
                       <td>{formatDate(deposit.start_date)}</td>
                       <td>{formatDate(deposit.maturity_date)}</td>
-                      <td className="text-right profit-positive">
+                      <td
+                        className="text-right"
+                        style={{ color: 'var(--color-profit-up)' }}
+                      >
                         +{formatCurrency(toNum(deposit.expected_return))}
                       </td>
                       <td>
-                        <span className={statusInfo.className}>
-                          {statusInfo.text}
-                        </span>
+                        <Badge variant={depositStatusToVariant(deposit.status)}>
+                          {depositStatusToText(deposit.status)}
+                        </Badge>
                       </td>
                       <td className="text-right">
                         {remainingDays < 0 ? '已到期' : `${remainingDays}天`}
                       </td>
                       <td className="text-center">
-                        <button
-                          className="btn-link btn-edit"
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => onEditDeposit(deposit)}
                         >
                           编辑
-                        </button>
-                        <button
-                          className="btn-link btn-delete"
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => onDeleteDeposit(deposit.id, deposit.product_name)}
                         >
                           删除
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   )

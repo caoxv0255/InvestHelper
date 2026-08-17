@@ -15,7 +15,7 @@ const SELECTOR =
 
 export function useAutoFocus(
   open: boolean,
-  containerSelector = '.modal-content',
+  containerSelector = '.ds-modal-content',
 ) {
   useEffect(() => {
     if (!open) return
