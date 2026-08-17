@@ -11,6 +11,7 @@ from app.db.session import engine, Base
 from app.models import *  # noqa: F401, F403 - 导入所有模型以确保注册到 Base.metadata
 from app.db.session import SessionLocal
 from app.services.portfolio import capture_portfolio_snapshot
+from app.services.price_refresh import refresh_holding_prices
 from app.services import news_crawler
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,11 @@ async def _daily_snapshot_loop():
         def capture_in_worker():
             db = SessionLocal()
             try:
+                # 快照采集前先刷新持仓价格，保证快照中 market_value 反映当日最新行情
+                try:
+                    refresh_holding_prices(db)
+                except Exception as e:  # noqa: BLE001
+                    logger.warning("快照前刷新持仓价格失败: %s", e)
                 return capture_portfolio_snapshot(db)
             finally:
                 db.close()

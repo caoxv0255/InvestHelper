@@ -1,10 +1,15 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.holdings import Holding
 from app.schemas.holdings import HoldingCreate, HoldingUpdate, HoldingResponse
+from app.services.price_refresh import (
+    get_task_state,
+    refresh_holding_prices,
+    refresh_holding_prices_async,
+)
 
 router = APIRouter()
 
@@ -73,3 +78,20 @@ async def delete_holding(holding_id: int, db: Session = Depends(get_db)):
     db.delete(db_holding)
     db.commit()
     return {"message": "删除成功", "id": holding_id}
+
+
+@router.post("/holdings/refresh-prices")
+async def refresh_prices(background_tasks: BackgroundTasks):
+    """异步触发持仓价格批量刷新（不阻塞 HTTP 响应）。"""
+    state = get_task_state()
+    if state["status"] == "running":
+        return {"status": "running", "message": "刷新任务已在后台执行中"}
+
+    background_tasks.add_task(refresh_holding_prices_async)
+    return {"status": "started", "message": "刷新任务已启动"}
+
+
+@router.get("/holdings/refresh-prices/status")
+async def refresh_prices_status():
+    """查询最近一次刷新任务的状态。"""
+    return get_task_state()
