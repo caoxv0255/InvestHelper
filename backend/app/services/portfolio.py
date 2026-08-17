@@ -26,18 +26,30 @@ def build_portfolio_snapshot(db: Session, as_of: date | None = None) -> dict:
 
     states: dict[tuple[str, str, str], dict] = {}
     warnings: list[str] = []
+    summary: dict[str, dict] = defaultdict(lambda: {
+        "market_value": ZERO, "cost_basis": ZERO, "realized_profit": ZERO,
+        "unrealized_profit": ZERO, "dividends": ZERO, "total_profit": ZERO,
+        "net_deposit": ZERO,
+    })
     for tx in transactions:
+        quantity = Decimal(tx.quantity)
+        price = Decimal(tx.price)
+        fee = Decimal(tx.fee or ZERO)
+        amount = quantity * price
+        if tx.side in ("deposit", "withdraw"):
+            if tx.side == "deposit":
+                summary[tx.currency]["net_deposit"] += amount
+            else:
+                summary[tx.currency]["net_deposit"] -= amount
+            continue
         key = (tx.account, tx.code, tx.currency)
         state = states.setdefault(key, {
             "account": tx.account, "asset_type": tx.asset_type, "code": tx.code,
             "name": tx.name, "currency": tx.currency, "quantity": ZERO,
             "cost_basis": ZERO, "realized_profit": ZERO, "dividends": ZERO,
         })
-        quantity = Decimal(tx.quantity)
-        price = Decimal(tx.price)
-        fee = Decimal(tx.fee or ZERO)
         if tx.side == "buy":
-            state["cost_basis"] += quantity * price + fee
+            state["cost_basis"] += amount + fee
             state["quantity"] += quantity
         elif tx.side == "sell":
             if state["quantity"] <= ZERO:
@@ -51,13 +63,9 @@ def build_portfolio_snapshot(db: Session, as_of: date | None = None) -> dict:
             if sold < quantity:
                 warnings.append(f"{tx.trade_date} {tx.code} 卖出数量超过流水重建持仓")
         elif tx.side == "dividend":
-            state["dividends"] += quantity * price - fee
+            state["dividends"] += amount - fee
 
     positions = []
-    summary: dict[str, dict] = defaultdict(lambda: {
-        "market_value": ZERO, "cost_basis": ZERO, "realized_profit": ZERO,
-        "unrealized_profit": ZERO, "dividends": ZERO, "total_profit": ZERO,
-    })
     for state in states.values():
         quantity = state["quantity"]
         average_cost = state["cost_basis"] / quantity if quantity > ZERO else ZERO
@@ -108,6 +116,7 @@ def capture_portfolio_snapshot(db: Session, snapshot_date: date | None = None) -
             market_value=values["market_value"],
             cost_basis=values["cost_basis"],
             total_profit=values["total_profit"],
+            net_deposit=values.get("net_deposit", ZERO),
             positions=positions,
         ))
     db.commit()

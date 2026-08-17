@@ -14,7 +14,7 @@ class Transaction(BaseModel):
     asset_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
-    side: Mapped[str] = mapped_column(String(10), nullable=False, comment="buy/sell/dividend")
+    side: Mapped[str] = mapped_column(String(10), nullable=False, comment="buy/sell/dividend/deposit/withdraw")
     trade_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     quantity: Mapped[Decimal] = mapped_column(Numeric(20, 6), nullable=False)
     price: Mapped[Decimal] = mapped_column(Numeric(20, 6), nullable=False)

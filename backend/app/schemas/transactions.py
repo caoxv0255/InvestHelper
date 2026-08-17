@@ -8,7 +8,7 @@ class TransactionBase(BaseModel):
     asset_type: str = Field(min_length=1, max_length=50)
     code: str = Field(min_length=1, max_length=50)
     name: str = Field(min_length=1, max_length=200)
-    side: str = Field(pattern="^(buy|sell|dividend)$")
+    side: str = Field(pattern="^(buy|sell|dividend|deposit|withdraw)$")
     trade_date: date
     quantity: Decimal = Field(gt=0)
     price: Decimal = Field(ge=0)
