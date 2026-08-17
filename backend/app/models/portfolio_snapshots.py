@@ -13,6 +13,7 @@ class PortfolioSnapshot(BaseModel):
     currency: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
     market_value: Mapped[Decimal] = mapped_column(Numeric(20, 6), nullable=False)
     cost_basis: Mapped[Decimal] = mapped_column(Numeric(20, 6), nullable=False)
+    net_deposit: Mapped[Decimal] = mapped_column(Numeric(20, 6), nullable=False, default=0)
     total_profit: Mapped[Decimal] = mapped_column(Numeric(20, 6), nullable=False)
     positions: Mapped[list] = mapped_column(JSON, nullable=False)
 
