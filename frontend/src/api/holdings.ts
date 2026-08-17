@@ -45,3 +45,33 @@ export const updateHolding = async (id: number, data: HoldingUpdate) => {
 export const deleteHolding = async (id: number) => {
   return api.delete(`/holdings/${id}`)
 }
+
+/**
+ * 批量刷新所有持仓的实时价格（异步触发）
+ * 立即返回，不等待刷新完成
+ */
+export const refreshHoldingPrices = async () => {
+  return api.post<{
+    status: string
+    message: string
+  }>('/holdings/refresh-prices')
+}
+
+/**
+ * 查询刷新任务状态
+ */
+export const getRefreshPricesStatus = async () => {
+  return api.get<{
+    status: string  // idle | running | done | failed
+    started_at: number | null
+    finished_at: number | null
+    result: {
+      total?: number
+      updated?: number
+      skipped?: number
+      failed?: number
+      errors?: string[]
+      error?: string
+    } | null
+  }>('/holdings/refresh-prices/status')
+}

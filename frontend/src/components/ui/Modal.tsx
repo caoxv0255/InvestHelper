@@ -82,6 +82,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(function Modal(
             onClick={onClose}
             type="button"
             aria-label="Close"
+            disabled={!dismissible}
           >
             ×
           </button>

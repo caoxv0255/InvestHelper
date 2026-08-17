@@ -1,6 +1,11 @@
 import api from './request'
 
-export type TransactionSide = 'buy' | 'sell' | 'dividend'
+export type TransactionSide = 'buy' | 'sell' | 'dividend' | 'deposit' | 'withdraw'
+
+/** 资金流水方向列表 */
+export const CASH_FLOW_SIDES: TransactionSide[] = ['deposit', 'withdraw']
+/** 持仓交易方向列表 */
+export const ASSET_SIDES: TransactionSide[] = ['buy', 'sell', 'dividend']
 
 export interface Transaction {
   id: number

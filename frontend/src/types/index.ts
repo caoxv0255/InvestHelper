@@ -260,6 +260,16 @@ export interface PlatformComparison {
   annualized_rate: number
 }
 
+/** 资金流水汇总（按币种） */
+export interface CashFlowSummary {
+  currency: string
+  total_deposit: number
+  total_withdraw: number
+  net_deposit: number
+  real_return: number
+  real_return_rate: number
+}
+
 /** 仪表盘汇总数据 */
 export interface DashboardSummary {
   total_assets: number
@@ -279,6 +289,8 @@ export interface DashboardSummary {
     string,
     { available: boolean; snapshot_date?: string | null; baseline_value?: string; reason?: string }
   >
+  /** 资金流水汇总(按币种) */
+  cash_flow_summary?: CashFlowSummary[]
 }
 
 /** 风险等级 */
